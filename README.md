@@ -15,8 +15,7 @@ View your app in AI Studio: https://ai.studio/apps/drive/1zAMnqcy_vveQJOhBwtIBOZ
 
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
+2. Run the app:
    `npm run dev`
 
 ## Supabase app config
@@ -27,7 +26,6 @@ VITE_SUPABASE_URL=<your-supabase-url>
 VITE_SUPABASE_ANON_KEY=<your-anon-key>
 VITE_SUPABASE_EMAIL=<app-user-email>
 VITE_SUPABASE_PASSWORD=<app-user-password>
-GEMINI_API_KEY=<your-gemini-key>
 ```
 
 Use a Supabase Auth user (email/password) that should own the data; RLS policies rely on `auth.uid()`. Keep these secrets out of source control.
@@ -39,7 +37,6 @@ Add these in **Settings → Secrets → Actions** so CI builds without exposing 
 - `VITE_SUPABASE_ANON_KEY`
 - `VITE_SUPABASE_EMAIL`
 - `VITE_SUPABASE_PASSWORD`
-- `GEMINI_API_KEY`
 
 The workflow `.github/workflows/ci.yml` consumes those secrets to run `npm run build`.
 

@@ -1,9 +1,7 @@
 
 import React, { useState } from 'react';
 import { ProjectPlan, PhaseType } from '../types';
-import { Plus, Trash2, Copy, Calendar, FileDown, Wand2 } from 'lucide-react';
-import { generatePlanFromDescription } from '../services/gemini';
-import { formatDate } from '../utils/dateUtils';
+import { Plus, Trash2, Copy, Calendar } from 'lucide-react';
 
 interface DashboardProps {
   plans: ProjectPlan[];
@@ -17,41 +15,22 @@ const Dashboard: React.FC<DashboardProps> = ({ plans, onCreate, onSelect, onDele
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newPlanName, setNewPlanName] = useState('');
   const [newPlanDesc, setNewPlanDesc] = useState('');
-  const [useAI, setUseAI] = useState(false);
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [startDate, setStartDate] = useState(formatDate(new Date()));
-  const [isGenerating, setIsGenerating] = useState(false);
 
   const handleCreate = async () => {
     if (!newPlanName) return;
-
-    let phases: any[] = [];
-    
-    if (useAI && aiPrompt) {
-        setIsGenerating(true);
-        try {
-            const generatedPhases = await generatePlanFromDescription(aiPrompt, startDate);
-            phases = generatedPhases.map(p => ({ ...p, id: crypto.randomUUID() }));
-        } catch (e) {
-            alert("Failed to generate plan with AI. Creating empty plan instead.");
-        } finally {
-            setIsGenerating(false);
-        }
-    }
 
     const newPlan: ProjectPlan = {
       id: crypto.randomUUID(),
       name: newPlanName,
       description: newPlanDesc,
       createdAt: new Date().toISOString(),
-      phases: phases,
+      phases: [],
       holidays: [],
       subProjects: []
     };
     onCreate(newPlan);
     setNewPlanName('');
     setNewPlanDesc('');
-    setAiPrompt('');
     setIsModalOpen(false);
   };
 
@@ -153,44 +132,6 @@ const Dashboard: React.FC<DashboardProps> = ({ plans, onCreate, onSelect, onDele
                 />
               </div>
 
-              <div className="pt-2">
-                 <div className="flex items-center gap-2 mb-3">
-                    <input 
-                        type="checkbox" 
-                        id="aiToggle"
-                        checked={useAI}
-                        onChange={(e) => setUseAI(e.target.checked)}
-                        className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 border-gray-300"
-                    />
-                    <label htmlFor="aiToggle" className="text-sm font-medium text-slate-800 flex items-center gap-2">
-                        <Wand2 size={16} className="text-purple-500"/> 
-                        Generate with AI Assistant
-                    </label>
-                 </div>
-
-                 {useAI && (
-                    <div className="bg-purple-50 p-4 rounded-xl border border-purple-100 space-y-3 animate-in slide-in-from-top-2">
-                        <div>
-                             <label className="block text-xs font-semibold text-purple-800 uppercase tracking-wide mb-1">Start Date</label>
-                             <input 
-                                type="date" 
-                                value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                                className="w-full px-3 py-2 bg-white border border-purple-200 rounded-lg text-sm"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-purple-800 uppercase tracking-wide mb-1">Prompt / Scope</label>
-                            <textarea
-                                value={aiPrompt}
-                                onChange={(e) => setAiPrompt(e.target.value)}
-                                placeholder="e.g., Create a mobile app with 2 weeks of design, 4 weeks dev, 2 weeks QA."
-                                className="w-full px-3 py-2 bg-white border border-purple-200 rounded-lg text-sm h-20 resize-none"
-                            />
-                        </div>
-                    </div>
-                 )}
-              </div>
             </div>
 
             <div className="p-4 bg-slate-50 flex justify-end gap-3 border-t border-slate-100">
@@ -202,10 +143,10 @@ const Dashboard: React.FC<DashboardProps> = ({ plans, onCreate, onSelect, onDele
               </button>
               <button 
                 onClick={handleCreate}
-                disabled={!newPlanName || (useAI && isGenerating)}
+                disabled={!newPlanName}
                 className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-lg font-medium shadow-md transition-all flex items-center gap-2"
               >
-                {isGenerating ? 'Generating...' : 'Create Project'}
+                Create Project
               </button>
             </div>
           </div>
