@@ -13,19 +13,9 @@ const createMemoryStorage = (): SupportedStorage => {
 };
 
 const getStorageConfig = () => {
-  if (typeof window === 'undefined') {
-    return { storage: createMemoryStorage(), persistSession: false };
-  }
-
-  try {
-    const testKey = '__sb_storage_test__';
-    window.localStorage.setItem(testKey, '1');
-    window.localStorage.removeItem(testKey);
-    return { storage: window.localStorage, persistSession: true };
-  } catch {
-    console.warn('Local storage unavailable; using in-memory auth (sessions won\'t persist across reloads).');
-    return { storage: createMemoryStorage(), persistSession: false };
-  }
+  // Some contexts (iframes/sandboxed GitHub Pages) block storage entirely.
+  // Avoid touching window.localStorage to prevent SecurityError and use memory-only auth.
+  return { storage: createMemoryStorage(), persistSession: false };
 };
 
 const storageConfig = getStorageConfig();
