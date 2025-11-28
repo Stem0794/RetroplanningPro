@@ -9,21 +9,30 @@ const App: React.FC = () => {
   const [plans, setPlans] = useState<ProjectPlan[]>([]);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const safeGet = (key: string) => {
-    try {
-      return localStorage.getItem(key);
-    } catch {
-      return null;
-    }
+  const createMemoryStorage = () => {
+    const mem = new Map<string, string>();
+    return {
+      getItem: (key: string) => mem.get(key) ?? null,
+      setItem: (key: string, value: string) => { mem.set(key, value); },
+      removeItem: (key: string) => { mem.delete(key); }
+    };
   };
 
-  const safeSet = (key: string, value: string) => {
+  const storage = (() => {
     try {
-      localStorage.setItem(key, value);
+      const ls = window.localStorage;
+      const testKey = '__retro_test__';
+      ls.setItem(testKey, '1');
+      ls.removeItem(testKey);
+      return ls;
     } catch {
-      // Storage may be blocked (e.g., sandbox/iframe); ignore.
+      console.warn('localStorage unavailable; using in-memory storage (data lost on reload).');
+      return createMemoryStorage();
     }
-  };
+  })();
+
+  const safeGet = (key: string) => storage.getItem(key);
+  const safeSet = (key: string, value: string) => storage.setItem(key, value);
 
   const duplicatePlanLocal = (plan: ProjectPlan): ProjectPlan => {
     const newId = crypto.randomUUID();
