@@ -20,27 +20,27 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const loadPlans = async () => {
-      try {
-        const params = new URLSearchParams(window.location.search);
-        const sharedPlanData = params.get('plan');
-        let importedPlan: ProjectPlan | null = null;
+      const params = new URLSearchParams(window.location.search);
+      const sharedPlanData = params.get('plan');
+      let importedPlan: ProjectPlan | null = null;
 
-        if (sharedPlanData) {
-          try {
-            const decoded = JSON.parse(decodeURIComponent(atob(sharedPlanData)));
-            if (decoded && decoded.id && decoded.phases) {
-              importedPlan = {
-                ...decoded,
-                id: crypto.randomUUID(),
-                name: `(Imported) ${decoded.name}`
-              };
-              window.history.replaceState({}, document.title, window.location.pathname);
-            }
-          } catch (parseErr) {
-            console.error('Failed to import shared plan', parseErr);
+      if (sharedPlanData) {
+        try {
+          const decoded = JSON.parse(decodeURIComponent(atob(sharedPlanData)));
+          if (decoded && decoded.id && decoded.phases) {
+            importedPlan = {
+              ...decoded,
+              id: crypto.randomUUID(),
+              name: `(Imported) ${decoded.name}`
+            };
+            window.history.replaceState({}, document.title, window.location.pathname);
           }
+        } catch (parseErr) {
+          console.error('Failed to import shared plan', parseErr);
         }
+      }
 
+      try {
         let remotePlans = await fetchPlansFromSupabase();
 
         if (importedPlan) {
@@ -53,7 +53,14 @@ const App: React.FC = () => {
       } catch (e) {
         console.error('Failed to load Supabase plans', e);
         setError((e as Error).message);
-        setPlans([MOCK_PLAN]);
+
+        // If we have an imported plan, still show it even if Supabase failed
+        if (importedPlan) {
+          setPlans([importedPlan]);
+          setCurrentPlanId(importedPlan.id);
+        } else {
+          setPlans([MOCK_PLAN]);
+        }
       } finally {
         setIsLoaded(true);
       }
