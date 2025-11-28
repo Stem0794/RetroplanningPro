@@ -12,25 +12,31 @@ const createMemoryStorage = (): SupportedStorage => {
   };
 };
 
-const getSafeStorage = (): SupportedStorage | undefined => {
-  if (typeof window === 'undefined') return createMemoryStorage();
+const getStorageConfig = () => {
+  if (typeof window === 'undefined') {
+    return { storage: createMemoryStorage(), persistSession: false };
+  }
+
   try {
     const testKey = '__sb_storage_test__';
     window.localStorage.setItem(testKey, '1');
     window.localStorage.removeItem(testKey);
-    return window.localStorage;
+    return { storage: window.localStorage, persistSession: true };
   } catch {
-    console.warn('Local storage unavailable; falling back to in-memory auth session.');
-    return createMemoryStorage();
+    console.warn('Local storage unavailable; using in-memory auth (sessions won\'t persist across reloads).');
+    return { storage: createMemoryStorage(), persistSession: false };
   }
 };
+
+const storageConfig = getStorageConfig();
 
 export const supabase = supabaseUrl && supabaseKey
   ? createClient(supabaseUrl, supabaseKey, {
       auth: {
-        storage: getSafeStorage(),
-        persistSession: true,
+        storage: storageConfig.storage,
+        persistSession: storageConfig.persistSession,
         autoRefreshToken: true,
+        detectSessionInUrl: false,
       },
     })
   : undefined;
