@@ -27,9 +27,21 @@ VITE_SUPABASE_URL=<your-supabase-url>
 VITE_SUPABASE_ANON_KEY=<your-anon-key>
 VITE_SUPABASE_EMAIL=<app-user-email>
 VITE_SUPABASE_PASSWORD=<app-user-password>
+GEMINI_API_KEY=<your-gemini-key>
 ```
 
 Use a Supabase Auth user (email/password) that should own the data; RLS policies rely on `auth.uid()`. Keep these secrets out of source control.
+
+### GitHub Secrets
+
+Add these in **Settings → Secrets → Actions** so CI builds without exposing keys:
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `VITE_SUPABASE_EMAIL`
+- `VITE_SUPABASE_PASSWORD`
+- `GEMINI_API_KEY`
+
+The workflow `.github/workflows/ci.yml` consumes those secrets to run `npm run build`.
 
 ## Supabase database
 
