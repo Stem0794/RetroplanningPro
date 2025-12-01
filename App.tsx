@@ -25,7 +25,14 @@ const App: React.FC = () => {
   const [authPassword, setAuthPassword] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
-  const [useLocalOnly, setUseLocalOnly] = useState(false);
+  const [useLocalOnly, setUseLocalOnly] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return Boolean(params.get('plan')); // public shared links force local-only
+    } catch {
+      return false;
+    }
+  });
 
   const supabaseEnabled = Boolean(supabase && !supabaseIsServiceRoleKey && !useLocalOnly);
 
