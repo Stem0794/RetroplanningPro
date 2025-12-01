@@ -4,12 +4,25 @@ import Dashboard from './components/Dashboard';
 import Planner from './components/Planner';
 import { ProjectPlan } from './types';
 import { MOCK_PLAN } from './utils/mockData';
+import {
+  fetchPlans as fetchRemotePlans,
+  savePlan as saveRemotePlan,
+  deletePlan as deleteRemotePlan,
+  duplicatePlan as duplicateRemotePlan,
+  createPlan as createRemotePlan
+} from './services/projects';
+import { supabase } from './services/supabaseClient';
 
 const App: React.FC = () => {
   const [plans, setPlans] = useState<ProjectPlan[]>([]);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const supabaseEnabled = Boolean(
+    supabase &&
+    import.meta.env.VITE_SUPABASE_EMAIL &&
+    import.meta.env.VITE_SUPABASE_PASSWORD
+  );
 
   const handleError = (message: string, err: unknown) => {
     console.error(message, err);
@@ -69,73 +82,131 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const sharedPlanData = params.get('plan');
-    let importedPlan: ProjectPlan | null = null;
+    const loadPlans = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const sharedPlanData = params.get('plan');
+      let importedPlan: ProjectPlan | null = null;
 
-    if (sharedPlanData) {
-      try {
-        const decoded = JSON.parse(decodeURIComponent(atob(sharedPlanData)));
-        if (decoded && decoded.id && decoded.phases) {
-          importedPlan = {
-            ...decoded,
-            id: crypto.randomUUID(),
-            name: `(Imported) ${decoded.name}`
-          };
-          window.history.replaceState({}, document.title, window.location.pathname);
+      if (sharedPlanData) {
+        try {
+          const decoded = JSON.parse(decodeURIComponent(atob(sharedPlanData)));
+          if (decoded && decoded.id && decoded.phases) {
+            importedPlan = {
+              ...decoded,
+              id: crypto.randomUUID(),
+              name: `(Imported) ${decoded.name}`
+            };
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        } catch (parseErr) {
+          handleError('Failed to import shared plan', parseErr);
         }
-      } catch (parseErr) {
-        handleError('Failed to import shared plan', parseErr);
       }
-    }
 
-    let initialPlans: ProjectPlan[] = [];
-    const saved = safeGet('retro_plans');
-    if (saved) {
-      try {
-        initialPlans = JSON.parse(saved);
-      } catch (e) {
-        handleError('Failed to parse local plans', e);
+      let initialPlans: ProjectPlan[] | null = null;
+
+      if (supabaseEnabled) {
+        try {
+          initialPlans = await fetchRemotePlans();
+        } catch (err) {
+          handleError('Failed to load plans from Supabase. Falling back to local data.', err);
+        }
       }
-    }
 
-    if (importedPlan) {
-      initialPlans = [importedPlan, ...initialPlans];
-      setCurrentPlanId(importedPlan.id);
-    }
+      if (!initialPlans) {
+        initialPlans = [];
+        const saved = safeGet('retro_plans');
+        if (saved) {
+          try {
+            initialPlans = JSON.parse(saved);
+          } catch (e) {
+            handleError('Failed to parse local plans', e);
+          }
+        }
+      }
 
-    if (initialPlans.length === 0) {
-      initialPlans = [MOCK_PLAN];
-    }
+      if (importedPlan) {
+        initialPlans = [importedPlan, ...initialPlans];
+        setCurrentPlanId(importedPlan.id);
+        if (supabaseEnabled) {
+          try {
+            await createRemotePlan(importedPlan);
+          } catch (err) {
+            handleError('Failed to save imported plan to Supabase', err);
+          }
+        }
+      }
 
-    setPlans(initialPlans);
-    setIsLoaded(true);
-  }, []);
+      if (initialPlans.length === 0) {
+        initialPlans = [MOCK_PLAN];
+      }
+
+      setPlans(initialPlans);
+      setIsLoaded(true);
+    };
+
+    void loadPlans();
+  }, [supabaseEnabled]);
 
   useEffect(() => {
-    if (isLoaded) {
+    if (!supabaseEnabled && isLoaded) {
       safeSet('retro_plans', JSON.stringify(plans));
     }
-  }, [plans, isLoaded]);
+  }, [plans, isLoaded, supabaseEnabled]);
 
-  const handleCreatePlan = (plan: ProjectPlan) => {
+  const handleCreatePlan = async (plan: ProjectPlan) => {
+    if (supabaseEnabled) {
+      try {
+        await createRemotePlan(plan);
+      } catch (err) {
+        handleError('Failed to create project in Supabase', err);
+        return;
+      }
+    }
     setPlans(prev => [plan, ...prev]);
     setCurrentPlanId(plan.id);
   };
 
-  const handleDeletePlan = (id: string) => {
+  const handleDeletePlan = async (id: string) => {
     if (!confirm('Are you sure you want to delete this project?')) return;
+    if (supabaseEnabled) {
+      try {
+        await deleteRemotePlan(id);
+      } catch (err) {
+        handleError('Failed to delete project from Supabase', err);
+        return;
+      }
+    }
     setPlans(prev => prev.filter(p => p.id !== id));
     if (currentPlanId === id) setCurrentPlanId(null);
   };
 
-  const handleDuplicatePlan = (plan: ProjectPlan) => {
+  const handleDuplicatePlan = async (plan: ProjectPlan) => {
+    if (supabaseEnabled) {
+      try {
+        const newPlan = await duplicateRemotePlan(plan);
+        setPlans(prev => [newPlan, ...prev]);
+        setCurrentPlanId(newPlan.id);
+        return;
+      } catch (err) {
+        handleError('Failed to duplicate project in Supabase', err);
+        return;
+      }
+    }
     const newPlan = duplicatePlanLocal(plan);
     setPlans(prev => [newPlan, ...prev]);
     setCurrentPlanId(newPlan.id);
   };
 
-  const handleUpdatePlan = (updatedPlan: ProjectPlan) => {
+  const handleUpdatePlan = async (updatedPlan: ProjectPlan) => {
+    if (supabaseEnabled) {
+      try {
+        await saveRemotePlan(updatedPlan);
+      } catch (err) {
+        handleError('Failed to save project to Supabase', err);
+        return;
+      }
+    }
     setPlans(prev => prev.map(p => p.id === updatedPlan.id ? updatedPlan : p));
   };
 
