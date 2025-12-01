@@ -18,10 +18,29 @@ const getStorageConfig = () => {
   return { storage: createMemoryStorage(), persistSession: false };
 };
 
+const isServiceRoleKey = (key: string) => {
+  try {
+    const payload = key.split('.')[1];
+    const decoded = JSON.parse(atob(payload));
+    return decoded?.role === 'service_role';
+  } catch {
+    return false;
+  }
+};
+
+const shouldInitSupabase = () => {
+  if (!supabaseUrl || !supabaseKey) return false;
+  if (isServiceRoleKey(supabaseKey)) {
+    console.warn('Supabase service_role key detected in client. Use the anon public key instead.');
+    return false;
+  }
+  return true;
+};
+
 const storageConfig = getStorageConfig();
 
-export const supabase = supabaseUrl && supabaseKey
-  ? createClient(supabaseUrl, supabaseKey, {
+export const supabase = shouldInitSupabase()
+  ? createClient(supabaseUrl as string, supabaseKey as string, {
       auth: {
         storage: storageConfig.storage,
         persistSession: storageConfig.persistSession,

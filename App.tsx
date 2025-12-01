@@ -108,8 +108,11 @@ const App: React.FC = () => {
       if (supabaseEnabled) {
         try {
           initialPlans = await fetchRemotePlans();
-        } catch (err) {
-          handleError('Failed to load plans from Supabase. Falling back to local data.', err);
+        } catch (err: any) {
+          const message = typeof err?.message === 'string' && err.message.includes('secret API key')
+            ? 'Supabase is misconfigured: use the anon public key, not the service role key.'
+            : 'Failed to load plans from Supabase. Falling back to local data.';
+          handleError(message, err);
         }
       }
 
