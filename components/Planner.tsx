@@ -58,6 +58,8 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
   const [frozenPhases, setFrozenPhases] = useState<Phase[] | null>(null);
   const [draggingPhaseId, setDraggingPhaseId] = useState<string | null>(null);
   const [dragOverPhaseId, setDragOverPhaseId] = useState<string | null>(null);
+  const [isDraggingNewPhase, setIsDraggingNewPhase] = useState(false);
+  const [newPhaseDrag, setNewPhaseDrag] = useState<{ subProjectId?: string; date?: string } | null>(null);
 
   // Constants
   const BASE_DAY_WIDTH = 30; 
@@ -247,6 +249,47 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
   };
 
   // --- Drag & Drop Logic ---
+
+  const handleNewPhaseDragStart = (subProjectId?: string) => (e: React.DragEvent) => {
+    setIsDraggingNewPhase(true);
+    setNewPhaseDrag({ subProjectId });
+    e.dataTransfer.effectAllowed = 'copy';
+  };
+
+  const handleNewPhaseDragEnd = () => {
+    setIsDraggingNewPhase(false);
+    setNewPhaseDrag(null);
+  };
+
+  const handleNewPhaseDragOver = (e: React.DragEvent, subProjectId?: string) => {
+    if (!isDraggingNewPhase) return;
+    e.preventDefault();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = e.clientX - rect.left + (scrollContainerRef.current?.scrollLeft || 0);
+    const dayIndex = Math.floor(x / DAY_WIDTH);
+    const date = new Date(timelineStart);
+    date.setDate(date.getDate() + dayIndex);
+    setNewPhaseDrag({ subProjectId, date: formatDate(date) });
+  };
+
+  const handleNewPhaseDrop = (subProjectId?: string) => {
+    if (!isDraggingNewPhase || !newPhaseDrag?.date) return;
+    const spId = subProjectId ?? newPhaseDrag.subProjectId;
+    const newPhase: Phase = {
+      id: crypto.randomUUID(),
+      name: '',
+      startDate: newPhaseDrag.date,
+      endDate: newPhaseDrag.date,
+      type: PhaseType.DEVELOPMENT,
+      subProjectId: spId || undefined
+    };
+    setPhases(prev => [...prev, newPhase]);
+    setEditingPhase(newPhase);
+    setSidebarOpen(true);
+    setActiveTab('phases');
+    setIsDraggingNewPhase(false);
+    setNewPhaseDrag(null);
+  };
 
   const reorderPhases = (sourceId: string, targetId: string) => {
     setPhases(prev => {
@@ -495,6 +538,21 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
       )
   };
 
+  const renderNewPhaseGhost = (subProjectId?: string) => {
+    if (!isDraggingNewPhase || !newPhaseDrag?.date) return null;
+    if ((newPhaseDrag.subProjectId || '') !== (subProjectId || '')) return null;
+    const ghostDate = new Date(newPhaseDrag.date);
+    const diffTime = ghostDate.getTime() - weeks[0].getTime();
+    const daysFromStart = diffTime / (1000 * 60 * 60 * 24);
+    const left = daysFromStart * DAY_WIDTH;
+    return (
+      <div
+        className="absolute top-1.5 h-7 rounded-md border border-dashed border-indigo-400 bg-indigo-500/20 z-10 pointer-events-none"
+        style={{ left: `${left}px`, width: `${DAY_WIDTH}px` }}
+      />
+    );
+  };
+
   // Holiday Overlay: Highest Z-Index to obscure phases
   const renderHolidayOverlay = () => {
     return (
@@ -597,6 +655,16 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
                 <Plus size={16} />
                 Manage Phases
             </button>
+            <div
+              draggable
+              onDragStart={handleNewPhaseDragStart()}
+              onDragEnd={handleNewPhaseDragEnd}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors border border-indigo-100 cursor-grab active:cursor-grabbing"
+              title="Drag onto the grid to create a new phase"
+            >
+              <Plus size={16} />
+              Drag New Phase
+            </div>
             <button 
                 onClick={handleExport}
                 className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
@@ -685,6 +753,8 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
                                             onDragOver={(e) => e.preventDefault()}
                                             onDrop={() => handlePhaseRowDrop(phase.id)}
                                             onDragEnd={handlePhaseRowDragEnd}
+                                            onDragOverCapture={(e) => handleNewPhaseDragOver(e, subProject.id)}
+                                            onDropCapture={() => handleNewPhaseDrop(subProject.id)}
                                         >
                                             {/* Phase Label */}
                                             <div className="w-64 sticky left-0 z-30 bg-white border-r border-slate-100 px-8 py-2 flex items-center justify-between shadow-[4px_0_10px_-5px_rgba(0,0,0,0.1)] cursor-grab active:cursor-grabbing">
@@ -703,8 +773,11 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
                                             <div 
                                                 className="relative flex-1 cursor-crosshair"
                                                 onClick={(e) => handleGridClick(e, subProject.id)}
+                                                onDragOver={(e) => handleNewPhaseDragOver(e, subProject.id)}
+                                                onDrop={() => handleNewPhaseDrop(subProject.id)}
                                             >
                                                 {renderBackgroundGrid()}
+                                                {renderNewPhaseGhost(subProject.id)}
                                                 {renderTimelineRow(phase)}
                                                 {renderHolidayOverlay()}
                                             </div>
@@ -748,6 +821,8 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
                                 onDragOver={(e) => e.preventDefault()}
                                 onDrop={() => handlePhaseRowDrop(phase.id)}
                                 onDragEnd={handlePhaseRowDragEnd}
+                                onDragOverCapture={(e) => handleNewPhaseDragOver(e)}
+                                onDropCapture={() => handleNewPhaseDrop()}
                             >
                                 <div className="w-64 sticky left-0 z-30 bg-white border-r border-slate-100 px-4 py-2 flex items-center justify-between shadow-[4px_0_10px_-5px_rgba(0,0,0,0.1)] cursor-grab active:cursor-grabbing">
                                     <div className="truncate text-xs font-medium text-slate-600">
@@ -760,16 +835,19 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
                                         <Edit2 size={10}/>
                                     </button>
                                 </div>
-                                <div 
-                                    className="relative flex-1 cursor-crosshair"
-                                    onClick={(e) => handleGridClick(e)}
-                                >
-                                    {renderBackgroundGrid()}
-                                    {renderTimelineRow(phase)}
-                                    {renderHolidayOverlay()}
-                                </div>
+                            <div 
+                                className="relative flex-1 cursor-crosshair"
+                                onClick={(e) => handleGridClick(e)}
+                                onDragOver={(e) => handleNewPhaseDragOver(e)}
+                                onDrop={() => handleNewPhaseDrop()}
+                            >
+                                {renderBackgroundGrid()}
+                                {renderNewPhaseGhost(undefined)}
+                                {renderTimelineRow(phase)}
+                                {renderHolidayOverlay()}
                             </div>
-                        ))}
+                        </div>
+                    ))}
                         {/* Empty Row General */}
                         <div className="flex h-8 hover:bg-slate-50/50 transition-colors">
                             <div className="w-64 sticky left-0 z-30 bg-white border-r border-slate-100 px-8 py-2 text-xs text-slate-300 italic">
