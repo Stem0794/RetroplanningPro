@@ -132,6 +132,8 @@ const App: React.FC = () => {
               name: `(Imported) ${decoded.name}`
             };
             window.history.replaceState({}, document.title, window.location.pathname);
+            // Public shared links should not require Supabase auth; keep this session local.
+            setUseLocalOnly(true);
           }
         } catch (parseErr) {
           handleError('Failed to import shared plan', parseErr);
