@@ -27,6 +27,8 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
   
   const [editingPhase, setEditingPhase] = useState<Phase | null>(null);
   const [editingHoliday, setEditingHoliday] = useState<Holiday | null>(null);
+  const [editingSubprojectId, setEditingSubprojectId] = useState<string | null>(null);
+  const [editingSubprojectName, setEditingSubprojectName] = useState('');
   
   // Sidebar states
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -54,6 +56,8 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
   // Drag State
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [frozenPhases, setFrozenPhases] = useState<Phase[] | null>(null);
+  const [draggingPhaseId, setDraggingPhaseId] = useState<string | null>(null);
+  const [dragOverPhaseId, setDragOverPhaseId] = useState<string | null>(null);
 
   // Constants
   const BASE_DAY_WIDTH = 30; 
@@ -169,6 +173,18 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
     setSubProjects(subProjects.filter(sp => sp.id !== id));
   };
 
+  const startRenamingSubproject = (sp: SubProject) => {
+    setEditingSubprojectId(sp.id);
+    setEditingSubprojectName(sp.name);
+  };
+
+  const commitSubprojectName = () => {
+    if (!editingSubprojectId) return;
+    setSubProjects(prev => prev.map(sp => sp.id === editingSubprojectId ? { ...sp, name: editingSubprojectName.trim() || sp.name } : sp));
+    setEditingSubprojectId(null);
+    setEditingSubprojectName('');
+  };
+
   const handleAddHoliday = () => {
     if(!newHolidayName) return;
     const newHoliday: Holiday = {
@@ -231,6 +247,44 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
   };
 
   // --- Drag & Drop Logic ---
+
+  const reorderPhases = (sourceId: string, targetId: string) => {
+    setPhases(prev => {
+      const list = [...prev];
+      const fromIndex = list.findIndex(p => p.id === sourceId);
+      const toIndex = list.findIndex(p => p.id === targetId);
+      if (fromIndex === -1 || toIndex === -1) return prev;
+      if (list[fromIndex].subProjectId !== list[toIndex].subProjectId) return prev; // only reorder within same subproject
+
+      const [moved] = list.splice(fromIndex, 1);
+      const insertAt = fromIndex < toIndex ? toIndex - 1 : toIndex;
+      list.splice(insertAt, 0, moved);
+      return list;
+    });
+  };
+
+  const handlePhaseRowDragStart = (phaseId: string) => {
+    setDraggingPhaseId(phaseId);
+  };
+
+  const handlePhaseRowDragEnter = (phaseId: string) => {
+    if (draggingPhaseId && draggingPhaseId !== phaseId) {
+      setDragOverPhaseId(phaseId);
+    }
+  };
+
+  const handlePhaseRowDrop = (phaseId: string) => {
+    if (draggingPhaseId && draggingPhaseId !== phaseId) {
+      reorderPhases(draggingPhaseId, phaseId);
+    }
+    setDraggingPhaseId(null);
+    setDragOverPhaseId(null);
+  };
+
+  const handlePhaseRowDragEnd = () => {
+    setDraggingPhaseId(null);
+    setDragOverPhaseId(null);
+  };
 
   const addDays = (dateStr: string, days: number): string => {
     const date = new Date(dateStr);
@@ -590,8 +644,27 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
                                         onClick={() => toggleSubProjectCollapse(subProject.id)}
                                         className="flex items-center gap-2 font-bold text-slate-700 text-sm hover:text-indigo-600"
                                     >
-                                        {isCollapsed ? <ChevronRight size={14}/> : <ChevronDown size={14}/>}
-                                        {subProject.name}
+                {isCollapsed ? <ChevronRight size={14}/> : <ChevronDown size={14}/>}
+                                        {editingSubprojectId === subProject.id ? (
+                                          <input
+                                            value={editingSubprojectName}
+                                            autoFocus
+                                            onChange={(e) => setEditingSubprojectName(e.target.value)}
+                                            onBlur={commitSubprojectName}
+                                            onKeyDown={(e) => {
+                                              if (e.key === 'Enter') commitSubprojectName();
+                                              if (e.key === 'Escape') { setEditingSubprojectId(null); setEditingSubprojectName(''); }
+                                            }}
+                                            className="text-sm font-medium bg-white border border-slate-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                          />
+                                        ) : (
+                                          <span
+                                            className="hover:underline"
+                                            onClick={(e) => { e.stopPropagation(); startRenamingSubproject(subProject); }}
+                                          >
+                                            {subProject.name}
+                                          </span>
+                                        )}
                                     </button>
                                     <span className="text-xs text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-200">
                                         {spPhases.length}
@@ -603,9 +676,18 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
                             {!isCollapsed && (
                                 <div className="relative mt-1">
                                     {spPhases.map(phase => (
-                                        <div key={phase.id} className="flex h-10 group">
+                                        <div
+                                            key={phase.id}
+                                            className={`flex h-10 group ${dragOverPhaseId === phase.id ? 'bg-indigo-50/60' : ''}`}
+                                            draggable
+                                            onDragStart={() => handlePhaseRowDragStart(phase.id)}
+                                            onDragEnter={() => handlePhaseRowDragEnter(phase.id)}
+                                            onDragOver={(e) => e.preventDefault()}
+                                            onDrop={() => handlePhaseRowDrop(phase.id)}
+                                            onDragEnd={handlePhaseRowDragEnd}
+                                        >
                                             {/* Phase Label */}
-                                            <div className="w-64 sticky left-0 z-30 bg-white border-r border-slate-100 px-8 py-2 flex items-center justify-between shadow-[4px_0_10px_-5px_rgba(0,0,0,0.1)]">
+                                            <div className="w-64 sticky left-0 z-30 bg-white border-r border-slate-100 px-8 py-2 flex items-center justify-between shadow-[4px_0_10px_-5px_rgba(0,0,0,0.1)] cursor-grab active:cursor-grabbing">
                                                 <div className="truncate text-xs font-medium text-slate-600" title={phase.name || PHASE_LABELS[phase.type]}>
                                                     {phase.name || PHASE_LABELS[phase.type]}
                                                 </div>
@@ -657,8 +739,17 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
                     </div>
                     <div className="relative mt-1">
                         {generalPhases.map(phase => (
-                            <div key={phase.id} className="flex h-10 group">
-                                <div className="w-64 sticky left-0 z-30 bg-white border-r border-slate-100 px-4 py-2 flex items-center justify-between shadow-[4px_0_10px_-5px_rgba(0,0,0,0.1)]">
+                            <div
+                                key={phase.id}
+                                className={`flex h-10 group ${dragOverPhaseId === phase.id ? 'bg-indigo-50/60' : ''}`}
+                                draggable
+                                onDragStart={() => handlePhaseRowDragStart(phase.id)}
+                                onDragEnter={() => handlePhaseRowDragEnter(phase.id)}
+                                onDragOver={(e) => e.preventDefault()}
+                                onDrop={() => handlePhaseRowDrop(phase.id)}
+                                onDragEnd={handlePhaseRowDragEnd}
+                            >
+                                <div className="w-64 sticky left-0 z-30 bg-white border-r border-slate-100 px-4 py-2 flex items-center justify-between shadow-[4px_0_10px_-5px_rgba(0,0,0,0.1)] cursor-grab active:cursor-grabbing">
                                     <div className="truncate text-xs font-medium text-slate-600">
                                         {phase.name || PHASE_LABELS[phase.type]}
                                     </div>
