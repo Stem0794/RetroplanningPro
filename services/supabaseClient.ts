@@ -12,9 +12,28 @@ const createMemoryStorage = (): SupportedStorage => {
   };
 };
 
+const createLocalStorage = (): SupportedStorage | null => {
+  try {
+    if (typeof window === 'undefined') return null;
+    const testKey = '__supabase_test__';
+    window.localStorage.setItem(testKey, '1');
+    window.localStorage.removeItem(testKey);
+    return {
+      getItem: async (key: string) => window.localStorage.getItem(key),
+      setItem: async (key: string, value: string) => { window.localStorage.setItem(key, value); },
+      removeItem: async (key: string) => { window.localStorage.removeItem(key); }
+    };
+  } catch {
+    return null;
+  }
+};
+
 const getStorageConfig = () => {
-  // Some contexts (iframes/sandboxed GitHub Pages) block storage entirely.
-  // Avoid touching window.localStorage to prevent SecurityError and use memory-only auth.
+  // Try persistent storage first; if blocked, fall back to in-memory (no persistence).
+  const local = createLocalStorage();
+  if (local) {
+    return { storage: local, persistSession: true };
+  }
   return { storage: createMemoryStorage(), persistSession: false };
 };
 
