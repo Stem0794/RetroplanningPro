@@ -18,19 +18,23 @@ const getStorageConfig = () => {
   return { storage: createMemoryStorage(), persistSession: false };
 };
 
-const isServiceRoleKey = (key: string) => {
+const getTokenRole = (key: string) => {
   try {
     const payload = key.split('.')[1];
-    const decoded = JSON.parse(atob(payload));
-    return decoded?.role === 'service_role';
+    if (!payload) return null;
+    // Base64url decode (JWT payload uses -_/)
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(normalized.length + (4 - (normalized.length % 4)) % 4, '=');
+    const decoded = JSON.parse(atob(padded));
+    return decoded?.role ?? null;
   } catch {
-    return false;
+    return null;
   }
 };
 
 const shouldInitSupabase = () => {
   if (!supabaseUrl || !supabaseKey) return false;
-  if (isServiceRoleKey(supabaseKey)) {
+  if (getTokenRole(supabaseKey) === 'service_role') {
     console.warn('Supabase service_role key detected in client. Use the anon public key instead.');
     return false;
   }
