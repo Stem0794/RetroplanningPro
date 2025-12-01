@@ -32,9 +32,12 @@ const getTokenRole = (key: string) => {
   }
 };
 
+const supabaseKeyRole = supabaseKey ? getTokenRole(supabaseKey) : null;
+const supabaseIsServiceKey = supabaseKeyRole === 'service_role';
+
 const shouldInitSupabase = () => {
   if (!supabaseUrl || !supabaseKey) return false;
-  if (getTokenRole(supabaseKey) === 'service_role') {
+  if (supabaseIsServiceKey) {
     console.warn('Supabase service_role key detected in client. Use the anon public key instead.');
     return false;
   }
@@ -53,3 +56,6 @@ export const supabase = shouldInitSupabase()
       },
     })
   : undefined;
+
+export const supabaseIsServiceRoleKey = supabaseIsServiceKey;
+export const supabaseKeyConfigured = Boolean(supabaseUrl && supabaseKey);

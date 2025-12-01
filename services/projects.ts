@@ -1,9 +1,6 @@
 import { supabase } from './supabaseClient';
 import { Holiday, Phase, PhaseType, ProjectPlan, SubProject } from '../types';
 
-const AUTH_EMAIL = import.meta.env.VITE_SUPABASE_EMAIL;
-const AUTH_PASSWORD = import.meta.env.VITE_SUPABASE_PASSWORD;
-
 const mapPhase = (row: any): Phase => ({
   id: row.id,
   name: row.name ?? undefined,
@@ -33,30 +30,13 @@ const mapProject = (row: any): ProjectPlan => ({
 
 const ensureClient = () => {
   if (!supabase) {
-    throw new Error('Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+    throw new Error('Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (anon public key).');
   }
   return supabase;
 };
 
-const ensureAuth = async () => {
-  const client = ensureClient();
-  const { data } = await client.auth.getSession();
-  if (data.session) return;
-
-  if (!AUTH_EMAIL || !AUTH_PASSWORD) {
-    throw new Error('Missing auth credentials. Set VITE_SUPABASE_EMAIL and VITE_SUPABASE_PASSWORD for a Supabase user.');
-  }
-
-  const { error } = await client.auth.signInWithPassword({
-    email: AUTH_EMAIL,
-    password: AUTH_PASSWORD,
-  });
-  if (error) throw error;
-};
-
 export const fetchPlans = async (): Promise<ProjectPlan[]> => {
   const client = ensureClient();
-  await ensureAuth();
 
   const { data, error } = await client
     .from('projects')
@@ -132,7 +112,6 @@ const replaceChildren = async (projectId: string, plan: ProjectPlan) => {
 
 export const savePlan = async (plan: ProjectPlan) => {
   const client = ensureClient();
-  await ensureAuth();
 
   const { error } = await client
     .from('projects')
@@ -150,7 +129,6 @@ export const savePlan = async (plan: ProjectPlan) => {
 
 export const deletePlan = async (id: string) => {
   const client = ensureClient();
-  await ensureAuth();
   const { error } = await client.from('projects').delete().eq('id', id);
   if (error) throw error;
 };
