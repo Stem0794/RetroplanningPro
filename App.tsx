@@ -9,6 +9,12 @@ const App: React.FC = () => {
   const [plans, setPlans] = useState<ProjectPlan[]>([]);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleError = (message: string, err: unknown) => {
+    console.error(message, err);
+    setError(message);
+  };
   const createMemoryStorage = () => {
     const mem = new Map<string, string>();
     return {
@@ -79,7 +85,7 @@ const App: React.FC = () => {
           window.history.replaceState({}, document.title, window.location.pathname);
         }
       } catch (parseErr) {
-        console.error('Failed to import shared plan', parseErr);
+        handleError('Failed to import shared plan', parseErr);
       }
     }
 
@@ -89,7 +95,7 @@ const App: React.FC = () => {
       try {
         initialPlans = JSON.parse(saved);
       } catch (e) {
-        console.error('Failed to parse local plans', e);
+        handleError('Failed to parse local plans', e);
       }
     }
 

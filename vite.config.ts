@@ -2,8 +2,9 @@ import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig(() => {
-  const base = process.env.GITHUB_ACTIONS ? '/RetroplanningPro/' : '/';
+export default defineConfig(({ command }) => {
+  // Serve from root during dev, but point built assets to the repo folder for GitHub Pages.
+  const base = command === 'serve' ? '/' : '/RetroplanningPro/';
 
   return {
     base,
