@@ -151,6 +151,11 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
     });
   };
 
+  useEffect(() => {
+    handleScrollToToday();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timelineStart, timelineEnd, zoomLevel, plan.id]);
+
   const handleAddPhase = () => {
     if (readOnly) return;
     if (!validateDates(newPhaseStart, newPhaseEnd)) {
