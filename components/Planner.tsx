@@ -346,11 +346,13 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
     setDragOverPhaseId(null);
   };
 
-  const getDateFromEvent = (e: React.MouseEvent, subProjectId?: string) => {
+  const getDateFromEvent = (e: React.MouseEvent) => {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const offsetX = e.clientX - rect.left + (scrollContainerRef.current?.scrollLeft || 0);
     const dayIndex = Math.floor(offsetX / DAY_WIDTH);
-    const clickDate = new Date(timelineStart);
+    const gridStart = weeks[0] ? new Date(weeks[0]) : new Date(timelineStart);
+    gridStart.setHours(0, 0, 0, 0);
+    const clickDate = new Date(gridStart);
     clickDate.setDate(clickDate.getDate() + dayIndex);
     return formatDate(clickDate);
   };
@@ -359,7 +361,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
     if (readOnly) return;
     if ((e.target as HTMLElement).closest('.group\\/phase')) return;
     e.preventDefault();
-    const dateStr = getDateFromEvent(e, subProjectId);
+    const dateStr = getDateFromEvent(e);
     setIsDrawingNewPhase(true);
     const rowKey = subProjectId || 'general';
     setNewPhaseDraft({ rowKey, subProjectId, startDate: dateStr, endDate: dateStr });
@@ -372,7 +374,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
     if (readOnly) return;
     if (!isDrawingNewPhase || !newPhaseDraft) return;
     e.preventDefault();
-    const dateStr = getDateFromEvent(e, subProjectId);
+    const dateStr = getDateFromEvent(e);
     setNewPhaseDraft(prev => prev ? { ...prev, endDate: dateStr } : prev);
   };
 
