@@ -40,7 +40,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
   // New Phase State
   const [newPhaseName, setNewPhaseName] = useState('');
   const [newPhaseStart, setNewPhaseStart] = useState(formatDate(new Date()));
-  const [newPhaseEnd, setNewPhaseEnd] = useState(formatDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)));
+  const [newPhaseEnd, setNewPhaseEnd] = useState(formatDate(new Date()));
   const [newPhaseType, setNewPhaseType] = useState<PhaseType>(PhaseType.DEVELOPMENT);
   const [newPhaseSubProject, setNewPhaseSubProject] = useState<string>('');
 
