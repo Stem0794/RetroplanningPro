@@ -129,7 +129,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
   const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.2, 2));
   const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.2, 0.4));
 
-  const handleScrollToToday = () => {
+  const scrollToDate = (target: Date, behavior: ScrollBehavior = 'smooth') => {
     if (!scrollContainerRef.current) return;
 
     const startOfDay = (d: Date) => {
@@ -138,23 +138,26 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
       return copy;
     };
 
-    const today = startOfDay(new Date());
+    const today = startOfDay(target);
     const gridStart = startOfDay(weeks[0] ? new Date(weeks[0]) : new Date(timelineStart));
     const diffDays = (today.getTime() - gridStart.getTime()) / (1000 * 60 * 60 * 24);
-
     const pixelOffset = Math.max(0, diffDays * DAY_WIDTH);
     const containerWidth = scrollContainerRef.current.clientWidth;
 
     scrollContainerRef.current.scrollTo({
-      left: pixelOffset + DAY_WIDTH / 2 - (containerWidth / 2), // center on the cell
-      behavior: 'smooth'
+      left: pixelOffset + DAY_WIDTH / 2 - (containerWidth / 2),
+      behavior
     });
   };
 
+  const handleScrollToToday = () => scrollToDate(new Date(), 'smooth');
+
   useEffect(() => {
-    handleScrollToToday();
+    // Defer to next frame to ensure grid dimensions are laid out
+    const id = requestAnimationFrame(() => scrollToDate(new Date(), 'auto'));
+    return () => cancelAnimationFrame(id);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timelineStart, timelineEnd, zoomLevel, plan.id]);
+  }, [plan.id, weeks.length, DAY_WIDTH]);
 
   const handleAddPhase = () => {
     if (readOnly) return;
