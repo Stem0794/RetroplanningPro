@@ -797,6 +797,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
 
                             {!isCollapsed && (
                                 <div className="relative mt-1">
+                                    {renderNewPhaseGhost(subProject.id)}
                                     {spPhases.map(phase => (
                                         <div
                                             key={phase.id}
@@ -843,18 +844,17 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                                             
                                             {/* Grid Track */}
                                             <div 
-                                                className="relative flex-1 cursor-crosshair"
-                                                onClick={(e) => handleGridClick(e, subProject.id)}
-                                                onMouseDown={(e) => handleGridMouseDown(e, subProject.id)}
-                                                onMouseMove={(e) => handleGridMouseMove(e, subProject.id)}
-                                                onMouseUp={handleGridMouseUp}
-                                            >
-                                                {renderBackgroundGrid()}
-                                                {renderNewPhaseGhost(subProject.id)}
-                                                {renderTimelineRow(phase)}
-                                                {renderHolidayOverlay()}
-                                            </div>
+                                            className="relative flex-1 cursor-crosshair"
+                                            onClick={(e) => handleGridClick(e, subProject.id)}
+                                            onMouseDown={(e) => handleGridMouseDown(e, subProject.id)}
+                                            onMouseMove={(e) => handleGridMouseMove(e, subProject.id)}
+                                            onMouseUp={handleGridMouseUp}
+                                        >
+                                            {renderBackgroundGrid()}
+                                            {renderTimelineRow(phase)}
+                                            {renderHolidayOverlay()}
                                         </div>
+                                    </div>
                                     ))}
                                     {/* Empty Row for Click to Add */}
                                     <div className="flex h-8 hover:bg-slate-50/50 transition-colors">
@@ -883,12 +883,13 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                         </div>
                         <div className="flex-1 bg-slate-50/50 border-y border-slate-100"></div>
                     </div>
-                    <div className="relative mt-1">
-                        {generalPhases.map(phase => (
-                            <div
-                                key={phase.id}
-                                className={`flex h-10 group ${dragOverPhaseId === phase.id ? 'bg-indigo-50/60' : ''}`}
-                                draggable={!readOnly}
+                <div className="relative mt-1">
+                    {renderNewPhaseGhost(undefined)}
+                    {generalPhases.map(phase => (
+                        <div
+                            key={phase.id}
+                            className={`flex h-10 group ${dragOverPhaseId === phase.id ? 'bg-indigo-50/60' : ''}`}
+                            draggable={!readOnly}
                                 onDragStart={() => handlePhaseRowDragStart(phase.id)}
                                 onDragEnter={() => handlePhaseRowDragEnter(phase.id)}
                                 onDragOver={(e) => e.preventDefault()}
@@ -926,19 +927,18 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                                     )}
                                 </div>
                             <div 
-                                className="relative flex-1 cursor-crosshair"
-                                onClick={(e) => handleGridClick(e)}
-                                onMouseDown={(e) => handleGridMouseDown(e)}
-                                onMouseMove={(e) => handleGridMouseMove(e)}
-                                onMouseUp={handleGridMouseUp}
-                            >
-                                {renderBackgroundGrid()}
-                                {renderNewPhaseGhost(undefined)}
-                                {renderTimelineRow(phase)}
-                                {renderHolidayOverlay()}
-                            </div>
+                            className="relative flex-1 cursor-crosshair"
+                            onClick={(e) => handleGridClick(e)}
+                            onMouseDown={(e) => handleGridMouseDown(e)}
+                            onMouseMove={(e) => handleGridMouseMove(e)}
+                            onMouseUp={handleGridMouseUp}
+                        >
+                            {renderBackgroundGrid()}
+                            {renderTimelineRow(phase)}
+                            {renderHolidayOverlay()}
                         </div>
-                    ))}
+                    </div>
+                ))}
                         {/* Empty Row General */}
                         <div className="flex h-8 hover:bg-slate-50/50 transition-colors">
                             <div className="w-64 sticky left-0 z-30 bg-white border-r border-slate-100 px-8 py-2 text-xs text-slate-300 italic">
