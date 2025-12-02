@@ -269,7 +269,10 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
     }
 
     setHolidays([...holidays, ...entries]);
+    const today = formatDate(new Date());
     setNewHolidayName('');
+    setNewHolidayStart(today);
+    setNewHolidayEnd(today);
   };
 
   const handleUpdateHoliday = () => {
@@ -1216,17 +1219,25 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                                             value={newHolidayName}
                                             onChange={(e) => setNewHolidayName(e.target.value)}
                                         />
-                                        <input 
-                                            type="date" 
-                                            className="w-full px-3 py-2 bg-white border border-red-200 rounded-lg text-sm shadow-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" 
-                                            value={newHolidayDate} 
-                                            onChange={e => setNewHolidayDate(e.target.value)} 
-                                        />
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <input 
+                                              type="date" 
+                                              className="w-full px-3 py-2 bg-white border border-red-200 rounded-lg text-sm shadow-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" 
+                                              value={newHolidayStart} 
+                                              onChange={e => setNewHolidayStart(e.target.value)} 
+                                          />
+                                          <input 
+                                              type="date" 
+                                              className="w-full px-3 py-2 bg-white border border-red-200 rounded-lg text-sm shadow-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" 
+                                              value={newHolidayEnd} 
+                                              onChange={e => setNewHolidayEnd(e.target.value)} 
+                                          />
+                                        </div>
                                         <button 
                                             onClick={handleAddHoliday}
                                             className="w-full bg-red-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors shadow-sm"
                                         >
-                                            Add Day
+                                            Add OOO
                                         </button>
                                     </div>
                                 </div>
