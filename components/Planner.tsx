@@ -65,6 +65,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
   const [dragOverPhaseId, setDragOverPhaseId] = useState<string | null>(null);
   const [isDrawingNewPhase, setIsDrawingNewPhase] = useState(false);
   const [newPhaseDraft, setNewPhaseDraft] = useState<{ rowKey: string; subProjectId?: string; startDate: string; endDate: string } | null>(null);
+  const hasAutoScrolled = useRef<string | null>(null);
 
   // Constants
   const BASE_DAY_WIDTH = 30; 
@@ -154,8 +155,11 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
   const handleScrollToToday = () => scrollToDate(new Date(), 'smooth');
 
   useEffect(() => {
-    // Defer to next frame to ensure grid dimensions are laid out
-    const id = requestAnimationFrame(() => scrollToDate(new Date(), 'auto'));
+    if (hasAutoScrolled.current === plan.id) return;
+    const id = requestAnimationFrame(() => {
+      scrollToDate(new Date(), 'auto');
+      hasAutoScrolled.current = plan.id;
+    });
     return () => cancelAnimationFrame(id);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan.id, weeks.length, DAY_WIDTH]);
@@ -367,7 +371,8 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
 
   const getDateFromEvent = (e: React.MouseEvent) => {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const x = e.clientX - rect.left; // position inside the grid row, scroll already reflected in rect
+    const scrollLeft = scrollContainerRef.current?.scrollLeft || 0;
+    const x = e.clientX - rect.left + scrollLeft;
     const dayIndex = Math.floor(x / DAY_WIDTH);
     const gridStart = new Date(timelineStart);
     gridStart.setHours(0, 0, 0, 0);
