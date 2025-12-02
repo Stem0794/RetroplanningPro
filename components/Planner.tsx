@@ -63,9 +63,8 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
   const [frozenPhases, setFrozenPhases] = useState<Phase[] | null>(null);
   const [draggingPhaseId, setDraggingPhaseId] = useState<string | null>(null);
   const [dragOverPhaseId, setDragOverPhaseId] = useState<string | null>(null);
-  const [isDrawingNewPhase, setIsDrawingNewPhase] = useState(false);
-  const [newPhaseDraft, setNewPhaseDraft] = useState<{ rowKey: string; subProjectId?: string; startDate: string; endDate: string } | null>(null);
   const hasAutoScrolled = useRef<string | null>(null);
+  const newSubProjectInputRef = useRef<HTMLInputElement>(null);
 
   // Constants
   const BASE_DAY_WIDTH = 30; 
@@ -381,53 +380,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
     return formatDate(clickDate);
   };
 
-  const handleGridMouseDown = (e: React.MouseEvent, subProjectId?: string) => {
-    if (readOnly) return;
-    if ((e.target as HTMLElement).closest('.group\\/phase')) return;
-    e.preventDefault();
-    const dateStr = getDateFromEvent(e);
-    setIsDrawingNewPhase(true);
-    const rowKey = subProjectId || 'general';
-    setNewPhaseDraft({ rowKey, subProjectId, startDate: dateStr, endDate: dateStr });
-    setActiveTab('phases');
-    setSidebarOpen(true);
-    setEditingPhase(null);
-  };
-
-  const handleGridMouseMove = (e: React.MouseEvent, subProjectId?: string) => {
-    if (readOnly) return;
-    if (!isDrawingNewPhase || !newPhaseDraft) return;
-    e.preventDefault();
-    const dateStr = getDateFromEvent(e);
-    setNewPhaseDraft(prev => prev ? { ...prev, endDate: dateStr } : prev);
-  };
-
-  const finalizeDraft = () => {
-    if (readOnly) return;
-    if (!newPhaseDraft) return;
-    const start = new Date(newPhaseDraft.startDate);
-    const end = new Date(newPhaseDraft.endDate);
-    const startDate = start <= end ? newPhaseDraft.startDate : newPhaseDraft.endDate;
-    const endDate = start <= end ? newPhaseDraft.endDate : newPhaseDraft.startDate;
-    const newPhase: Phase = {
-      id: crypto.randomUUID(),
-      name: '',
-      startDate,
-      endDate,
-      type: PhaseType.DEVELOPMENT,
-      subProjectId: newPhaseDraft.subProjectId || undefined
-    };
-    setPhases(prev => [...prev, newPhase]);
-    setEditingPhase(newPhase);
-    setNewPhaseDraft(null);
-    setIsDrawingNewPhase(false);
-  };
-
-  const handleGridMouseUp = () => {
-    if (readOnly) return;
-    if (!isDrawingNewPhase) return;
-    finalizeDraft();
-  };
+  // Drawing-to-add removed
 
   const addDays = (dateStr: string, days: number): string => {
     const date = new Date(dateStr);
@@ -790,6 +743,51 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
 
       {/* Main Workspace */}
       <div className="flex-1 overflow-hidden relative flex">
+        {/* Floating quick-add actions */}
+        {!readOnly && (
+          <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+            <button
+              onClick={() => {
+                setSidebarOpen(true);
+                setActiveTab('phases');
+                setEditingPhase(null);
+                setEditingHoliday(null);
+                setTimeout(() => newSubProjectInputRef.current?.focus(), 0);
+              }}
+              className="px-4 py-2 rounded-full bg-slate-800 text-white shadow-lg hover:bg-slate-900 text-sm"
+            >
+              Add Subproject
+            </button>
+            <button
+              onClick={() => {
+                setSidebarOpen(true);
+                setActiveTab('phases');
+                setEditingPhase(null);
+                setEditingHoliday(null);
+                const today = formatDate(new Date());
+                setNewPhaseStart(today);
+                setNewPhaseEnd(today);
+              }}
+              className="px-4 py-2 rounded-full bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 text-sm"
+            >
+              New Phase
+            </button>
+            <button
+              onClick={() => {
+                setSidebarOpen(true);
+                setActiveTab('holidays');
+                setEditingHoliday(null);
+                const today = formatDate(new Date());
+                setNewHolidayStart(today);
+                setNewHolidayEnd(today);
+                setNewHolidayName('');
+              }}
+              className="px-4 py-2 rounded-full bg-red-500 text-white shadow-lg hover:bg-red-600 text-sm"
+            >
+              Add OOO
+            </button>
+          </div>
+        )}
         
         {/* Scrollable Timeline Area */}
         <div ref={scrollContainerRef} className={`flex-1 overflow-auto timeline-scroll bg-white relative ${dragState ? 'cursor-grabbing' : ''}`}>
@@ -898,9 +896,6 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                                             <div 
                                             className="relative flex-1 cursor-crosshair"
                                             onClick={(e) => handleGridClick(e, subProject.id)}
-                                            onMouseDown={(e) => handleGridMouseDown(e, subProject.id)}
-                                            onMouseMove={(e) => handleGridMouseMove(e, subProject.id)}
-                                            onMouseUp={handleGridMouseUp}
                                         >
                                             {renderBackgroundGrid()}
                                             {renderTimelineRow(phase)}
@@ -908,13 +903,13 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                                         </div>
                                     </div>
                                     ))}
-                                    {/* Empty Row for Click to Add */}
-                                    <div className="flex h-8 hover:bg-slate-50/50 transition-colors">
-                                        <div className="w-64 sticky left-0 z-30 bg-white border-r border-slate-100 px-8 py-2 text-xs text-slate-300 italic">
-                                            Click grid to add phase +
-                                        </div>
-                                        <div 
-                                            className="relative flex-1 cursor-crosshair"
+                        {/* Empty Row for Click to Add */}
+                        <div className="flex h-8 hover:bg-slate-50/50 transition-colors">
+                            <div className="w-64 sticky left-0 z-30 bg-white border-r border-slate-100 px-8 py-2 text-xs text-slate-300 italic">
+                                Click grid to add phase +
+                            </div>
+                            <div 
+                                className="relative flex-1 cursor-crosshair"
                                             onClick={(e) => handleGridClick(e, subProject.id)}
                                         >
                                             {renderBackgroundGrid()}
@@ -936,12 +931,11 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                         <div className="flex-1 bg-slate-50/50 border-y border-slate-100"></div>
                     </div>
                     <div className="relative mt-1">
-                    {renderNewPhaseGhost('general')}
                         {generalPhases.map(phase => (
-                        <div
-                            key={phase.id}
-                            className={`flex h-10 group ${dragOverPhaseId === phase.id ? 'bg-indigo-50/60' : ''}`}
-                            draggable={!readOnly}
+                            <div
+                                key={phase.id}
+                                className={`flex h-10 group ${dragOverPhaseId === phase.id ? 'bg-indigo-50/60' : ''}`}
+                                draggable={!readOnly}
                                 onDragStart={() => handlePhaseRowDragStart(phase.id)}
                                 onDragEnter={() => handlePhaseRowDragEnter(phase.id)}
                                 onDragOver={(e) => e.preventDefault()}
@@ -981,9 +975,6 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                             <div 
                             className="relative flex-1 cursor-crosshair"
                             onClick={(e) => handleGridClick(e)}
-                            onMouseDown={(e) => handleGridMouseDown(e)}
-                            onMouseMove={(e) => handleGridMouseMove(e)}
-                            onMouseUp={handleGridMouseUp}
                         >
                             {renderBackgroundGrid()}
                             {renderTimelineRow(phase)}
