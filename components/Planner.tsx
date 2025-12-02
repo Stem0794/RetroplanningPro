@@ -9,6 +9,7 @@ interface PlannerProps {
   plan: ProjectPlan;
   onSave: (plan: ProjectPlan) => void;
   onBack: () => void;
+  readOnly?: boolean;
 }
 
 interface DragState {
@@ -20,7 +21,7 @@ interface DragState {
   hasMoved: boolean;
 }
 
-const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
+const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = false }) => {
   const [phases, setPhases] = useState<Phase[]>(plan.phases);
   const [holidays, setHolidays] = useState<Holiday[]>(plan.holidays);
   const [subProjects, setSubProjects] = useState<SubProject[]>(plan.subProjects || []);
@@ -87,6 +88,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
   }, [newPhaseType, newPhaseStart]);
 
   const handleSave = () => {
+    if (readOnly) return;
     onSave({ ...plan, phases, holidays, subProjects });
   };
 
@@ -125,6 +127,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
   };
 
   const handleAddPhase = () => {
+    if (readOnly) return;
     if (!validateDates(newPhaseStart, newPhaseEnd)) {
         alert("Start date must be before or equal to End date.");
         return;
@@ -144,6 +147,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
   };
 
   const handleUpdatePhase = () => {
+    if (readOnly) return;
     if (!editingPhase) return;
     
     if (!validateDates(editingPhase.startDate, editingPhase.endDate)) {
@@ -156,11 +160,13 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
   }
 
   const handleDeletePhase = (id: string) => {
+    if (readOnly) return;
     setPhases(phases.filter(p => p.id !== id));
     if (editingPhase?.id === id) setEditingPhase(null);
   };
 
   const handleAddSubProject = () => {
+    if (readOnly) return;
     if (!newSubProjectName) return;
     const newSp: SubProject = {
         id: crypto.randomUUID(),
@@ -171,6 +177,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
   };
 
   const handleDeleteSubProject = (id: string) => {
+    if (readOnly) return;
     setPhases(phases.map(p => p.subProjectId === id ? { ...p, subProjectId: undefined } : p));
     setSubProjects(subProjects.filter(sp => sp.id !== id));
   };
@@ -188,6 +195,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
   };
 
   const handleAddHoliday = () => {
+    if (readOnly) return;
     if(!newHolidayName) return;
     const newHoliday: Holiday = {
         id: crypto.randomUUID(),
@@ -199,12 +207,14 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
   };
 
   const handleUpdateHoliday = () => {
+    if (readOnly) return;
     if (!editingHoliday) return;
     setHolidays(holidays.map(h => h.id === editingHoliday.id ? editingHoliday : h));
     setEditingHoliday(null);
   };
 
   const handleDeleteHoliday = (id: string) => {
+    if (readOnly) return;
     setHolidays(holidays.filter(h => h.id !== id));
     if (editingHoliday?.id === id) setEditingHoliday(null);
   };
@@ -221,6 +231,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
   };
 
   const handleGridClick = (e: React.MouseEvent, subProjectId?: string) => {
+      if (readOnly) return;
       // Prevent triggering if clicking on an existing phase (bubbling handled by phase click handler, but safe to check)
       if ((e.target as HTMLElement).closest('.group\\/phase')) return;
 
@@ -266,16 +277,19 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
   };
 
   const handlePhaseRowDragStart = (phaseId: string) => {
+    if (readOnly) return;
     setDraggingPhaseId(phaseId);
   };
 
   const handlePhaseRowDragEnter = (phaseId: string) => {
+    if (readOnly) return;
     if (draggingPhaseId && draggingPhaseId !== phaseId) {
       setDragOverPhaseId(phaseId);
     }
   };
 
   const handlePhaseRowDrop = (phaseId: string) => {
+    if (readOnly) return;
     if (draggingPhaseId && draggingPhaseId !== phaseId) {
       reorderPhases(draggingPhaseId, phaseId);
     }
@@ -298,6 +312,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
   };
 
   const handleGridMouseDown = (e: React.MouseEvent, subProjectId?: string) => {
+    if (readOnly) return;
     if ((e.target as HTMLElement).closest('.group\\/phase')) return;
     e.preventDefault();
     const dateStr = getDateFromEvent(e, subProjectId);
@@ -309,6 +324,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
   };
 
   const handleGridMouseMove = (e: React.MouseEvent, subProjectId?: string) => {
+    if (readOnly) return;
     if (!isDrawingNewPhase || !newPhaseDraft) return;
     e.preventDefault();
     const dateStr = getDateFromEvent(e, subProjectId);
@@ -316,6 +332,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
   };
 
   const finalizeDraft = () => {
+    if (readOnly) return;
     if (!newPhaseDraft) return;
     const start = new Date(newPhaseDraft.startDate);
     const end = new Date(newPhaseDraft.endDate);
@@ -336,6 +353,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
   };
 
   const handleGridMouseUp = () => {
+    if (readOnly) return;
     if (!isDrawingNewPhase) return;
     finalizeDraft();
   };
@@ -648,43 +666,52 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
                 Today
             </button>
 
-             <button 
-                onClick={handleShare}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100"
-                title="Create Public Link"
-            >
-                <Share2 size={16} />
-                Share
-            </button>
-             <div className="w-px h-6 bg-slate-300 mx-1"></div>
-             <button 
-                onClick={() => { setSidebarOpen(true); setActiveTab('holidays'); setEditingPhase(null); }}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-            >
-                <CalendarOff size={16} />
-                OOO / Holidays
-            </button>
-            <button 
-                onClick={() => { setSidebarOpen(true); setActiveTab('phases'); setEditingHoliday(null); }}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-            >
-                <Plus size={16} />
-                Manage Phases
-            </button>
-            <button 
-                onClick={handleExport}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
-            >
-                <Download size={16} />
-                Export
-            </button>
-            <button 
-                onClick={handleSave}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-md hover:shadow-lg transition-all"
-            >
-                <Save size={16} />
-                Save Changes
-            </button>
+             {!readOnly && (
+              <>
+                <button 
+                  onClick={handleShare}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100"
+                  title="Create Public Link"
+                >
+                  <Share2 size={16} />
+                  Share
+                </button>
+                <div className="w-px h-6 bg-slate-300 mx-1"></div>
+                <button 
+                  onClick={() => { setSidebarOpen(true); setActiveTab('holidays'); setEditingPhase(null); }}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                >
+                  <CalendarOff size={16} />
+                  OOO / Holidays
+                </button>
+                <button 
+                  onClick={() => { setSidebarOpen(true); setActiveTab('phases'); setEditingHoliday(null); }}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                >
+                  <Plus size={16} />
+                  Manage Phases
+                </button>
+                <button 
+                  onClick={handleExport}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                >
+                  <Download size={16} />
+                  Export
+                </button>
+                <button 
+                  onClick={handleSave}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-md hover:shadow-lg transition-all"
+                >
+                  <Save size={16} />
+                  Save Changes
+                </button>
+              </>
+             )}
+             {readOnly && (
+              <span className="px-3 py-1 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-full">
+                Public view (read-only)
+              </span>
+             )}
         </div>
       </div>
 
@@ -753,7 +780,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
                                         <div
                                             key={phase.id}
                                             className={`flex h-10 group ${dragOverPhaseId === phase.id ? 'bg-indigo-50/60' : ''}`}
-                                            draggable
+                                            draggable={!readOnly}
                                             onDragStart={() => handlePhaseRowDragStart(phase.id)}
                                             onDragEnter={() => handlePhaseRowDragEnter(phase.id)}
                                             onDragOver={(e) => e.preventDefault()}
@@ -761,16 +788,18 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
                                             onDragEnd={handlePhaseRowDragEnd}
                                         >
                                             {/* Phase Label */}
-                                            <div className="w-64 sticky left-0 z-30 bg-white border-r border-slate-100 px-8 py-2 flex items-center justify-between shadow-[4px_0_10px_-5px_rgba(0,0,0,0.1)] cursor-grab active:cursor-grabbing">
+                                            <div className={`w-64 sticky left-0 z-30 bg-white border-r border-slate-100 px-8 py-2 flex items-center justify-between shadow-[4px_0_10px_-5px_rgba(0,0,0,0.1)] ${readOnly ? '' : 'cursor-grab active:cursor-grabbing'}`}>
                                                 <div className="truncate text-xs font-medium text-slate-600" title={phase.name || PHASE_LABELS[phase.type]}>
                                                     {phase.name || PHASE_LABELS[phase.type]}
                                                 </div>
-                                                <button 
-                                                    onClick={() => { setEditingPhase(phase); setSidebarOpen(true); setActiveTab('phases'); }}
-                                                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-100 rounded text-slate-400 transition-opacity"
-                                                >
-                                                    <Edit2 size={10}/>
-                                                </button>
+                                                {!readOnly && (
+                                                  <button 
+                                                      onClick={() => { setEditingPhase(phase); setSidebarOpen(true); setActiveTab('phases'); }}
+                                                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-100 rounded text-slate-400 transition-opacity"
+                                                  >
+                                                      <Edit2 size={10}/>
+                                                  </button>
+                                                )}
                                             </div>
                                             
                                             {/* Grid Track */}
@@ -820,23 +849,25 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
                             <div
                                 key={phase.id}
                                 className={`flex h-10 group ${dragOverPhaseId === phase.id ? 'bg-indigo-50/60' : ''}`}
-                                draggable
+                                draggable={!readOnly}
                                 onDragStart={() => handlePhaseRowDragStart(phase.id)}
                                 onDragEnter={() => handlePhaseRowDragEnter(phase.id)}
                                 onDragOver={(e) => e.preventDefault()}
                                 onDrop={() => handlePhaseRowDrop(phase.id)}
                                 onDragEnd={handlePhaseRowDragEnd}
                             >
-                                <div className="w-64 sticky left-0 z-30 bg-white border-r border-slate-100 px-4 py-2 flex items-center justify-between shadow-[4px_0_10px_-5px_rgba(0,0,0,0.1)] cursor-grab active:cursor-grabbing">
+                                <div className={`w-64 sticky left-0 z-30 bg-white border-r border-slate-100 px-4 py-2 flex items-center justify-between shadow-[4px_0_10px_-5px_rgba(0,0,0,0.1)] ${readOnly ? '' : 'cursor-grab active:cursor-grabbing'}`}>
                                     <div className="truncate text-xs font-medium text-slate-600">
                                         {phase.name || PHASE_LABELS[phase.type]}
                                     </div>
-                                    <button 
-                                        onClick={() => { setEditingPhase(phase); setSidebarOpen(true); setActiveTab('phases'); }}
-                                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-100 rounded text-slate-400 transition-opacity"
-                                    >
-                                        <Edit2 size={10}/>
-                                    </button>
+                                    {!readOnly && (
+                                      <button 
+                                          onClick={() => { setEditingPhase(phase); setSidebarOpen(true); setActiveTab('phases'); }}
+                                          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-100 rounded text-slate-400 transition-opacity"
+                                      >
+                                          <Edit2 size={10}/>
+                                      </button>
+                                    )}
                                 </div>
                             <div 
                                 className="relative flex-1 cursor-crosshair"
@@ -872,7 +903,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
         </div>
 
         {/* Right Sidebar */}
-        {isSidebarOpen && (
+        {!readOnly && isSidebarOpen && (
             <div className="w-96 bg-white border-l border-slate-200 shadow-2xl z-50 flex flex-col h-full animate-in slide-in-from-right duration-300">
                 <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                     <h2 className="font-bold text-slate-700 uppercase tracking-wide text-sm">
@@ -892,19 +923,6 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack }) => {
                                     <Edit2 size={14}/> Editing Phase
                                 </h3>
                                 <div className="space-y-3">
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-500 uppercase">Subproject</label>
-                                        <select 
-                                            className={inputClass}
-                                            value={editingPhase.subProjectId || ''}
-                                            onChange={e => setEditingPhase({...editingPhase, subProjectId: e.target.value || undefined})}
-                                        >
-                                            <option value="">General (No Subproject)</option>
-                                            {subProjects.map(sp => (
-                                                <option key={sp.id} value={sp.id}>{sp.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
                                     <div>
                                         <label className="text-xs font-bold text-slate-500 uppercase">Name (Optional)</label>
                                         <input 

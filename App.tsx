@@ -25,6 +25,7 @@ const App: React.FC = () => {
   const [authPassword, setAuthPassword] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
+  const [isPublicView, setIsPublicView] = useState(false);
   const [useLocalOnly, setUseLocalOnly] = useState(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -141,6 +142,7 @@ const App: React.FC = () => {
             window.history.replaceState({}, document.title, window.location.pathname);
             // Public shared links should not require Supabase auth; keep this session local.
             setUseLocalOnly(true);
+            setIsPublicView(true);
           }
         } catch (parseErr) {
           handleError('Failed to import shared plan', parseErr);
@@ -373,6 +375,7 @@ const App: React.FC = () => {
           plan={currentPlan}
           onSave={handleUpdatePlan}
           onBack={() => setCurrentPlanId(null)}
+          readOnly={isPublicView}
         />
       ) : (
         <Dashboard 
