@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
 import { ProjectPlan, PHASE_LABELS, PhaseType } from '../types';
-import { getPlanRange, isSameDay } from '../utils/dateUtils';
+import { getPlanRange, getWeekNumber, isSameDay } from '../utils/dateUtils';
 
 export const exportToExcel = (plan: ProjectPlan) => {
   const X = (XLSX as any).default || XLSX;
@@ -59,6 +59,17 @@ export const exportToExcel = (plan: ProjectPlan) => {
   const weekendHeaderStyle = {
     ...dayHeaderStyle,
     fill: { fgColor: { rgb: 'E2E8F0' } }
+  };
+  const weekHeaderStyle = {
+    font: { bold: true, color: { rgb: SLATE }, sz: 10 },
+    alignment: { horizontal: 'center', vertical: 'center' as const },
+    fill: { fgColor: { rgb: 'F1F5F9' } },
+    border: {
+      top: { style: 'thin', color: { rgb: SLATE_LIGHT } },
+      bottom: { style: 'thin', color: { rgb: SLATE_LIGHT } },
+      left: { style: 'thin', color: { rgb: SLATE_LIGHT } },
+      right: { style: 'thin', color: { rgb: SLATE_LIGHT } }
+    }
   };
   const outlineBorder = {
     top: { style: 'thin', color: { rgb: SLATE_LIGHT } },
@@ -170,10 +181,14 @@ export const exportToExcel = (plan: ProjectPlan) => {
 
   // Month spans for header
   const monthSpans: { label: string; span: number }[] = [];
+  const weekSpans: { label: string; span: number }[] = [];
   if (allDays.length) {
     let currentMonth = allDays[0].getMonth();
     let currentYear = allDays[0].getFullYear();
     let span = 0;
+    let currentWeek = getWeekNumber(allDays[0]);
+    let weekYear = allDays[0].getFullYear();
+    let weekSpan = 0;
     allDays.forEach((d, idx) => {
       if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
         span += 1;
@@ -183,8 +198,19 @@ export const exportToExcel = (plan: ProjectPlan) => {
         currentYear = d.getFullYear();
         span = 1;
       }
+      const w = getWeekNumber(d);
+      const wy = d.getFullYear();
+      if (w === currentWeek && wy === weekYear) {
+        weekSpan += 1;
+      } else {
+        weekSpans.push({ label: `W${currentWeek}`, span: weekSpan });
+        currentWeek = w;
+        weekYear = wy;
+        weekSpan = 1;
+      }
       if (idx === allDays.length - 1) {
         monthSpans.push({ label: `${d.toLocaleString('default', { month: 'short' })} ${currentYear}`, span });
+        weekSpans.push({ label: `W${currentWeek}`, span: weekSpan });
       }
     });
   }
@@ -194,6 +220,7 @@ export const exportToExcel = (plan: ProjectPlan) => {
     [`Range: ${start.toLocaleDateString()} → ${end.toLocaleDateString()}`, ...Array(metaCols.length + allDays.length - 1).fill('')],
     [],
     [...metaCols, ...allDays.map(() => '')], // month row placeholders
+    [...metaCols, ...allDays.map(() => '')], // week row placeholders
     [...metaCols, ...dayLabels],
     ...timelineRows
   ];
@@ -219,17 +246,28 @@ export const exportToExcel = (plan: ProjectPlan) => {
     colOffset += m.span;
   });
 
-  // Day header (row 4)
-  applyHeader(wsTimeline, 4, metaCols.length + allDays.length);
+  // Week header (row 4)
+  colOffset = metaCols.length;
+  weekSpans.forEach((w) => {
+    const startCol = colOffset;
+    const endCol = colOffset + w.span - 1;
+    merge(wsTimeline, 4, startCol, 4, endCol);
+    setCellStyle(wsTimeline, 4, startCol, { ...weekHeaderStyle });
+    wsTimeline[X.utils.encode_cell({ r: 4, c: startCol })].v = w.label;
+    colOffset += w.span;
+  });
+
+  // Day header (row 5)
+  applyHeader(wsTimeline, 5, metaCols.length + allDays.length);
   allDays.forEach((d, idx) => {
-    const addr = X.utils.encode_cell({ r: 4, c: metaCols.length + idx });
+    const addr = X.utils.encode_cell({ r: 5, c: metaCols.length + idx });
     wsTimeline[addr].s = (d.getDay() === 0 || d.getDay() === 6) ? weekendHeaderStyle : dayHeaderStyle;
     wsTimeline[addr].v = d.getDate();
   });
 
   // Phase bars
   sortedPhases.forEach((phase, phaseIdx) => {
-    const row = phaseIdx + 5; // after title/range/spacer/month/day rows
+    const row = phaseIdx + 6; // after title/range/spacer/month/week/day rows
     const pStart = new Date(phase.startDate);
     const pEnd = new Date(phase.endDate);
     const fillColor = PHASE_HEX[phase.type] || 'E5E7EB';
