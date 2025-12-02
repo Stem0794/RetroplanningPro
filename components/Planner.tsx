@@ -63,7 +63,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
   const [draggingPhaseId, setDraggingPhaseId] = useState<string | null>(null);
   const [dragOverPhaseId, setDragOverPhaseId] = useState<string | null>(null);
   const [isDrawingNewPhase, setIsDrawingNewPhase] = useState(false);
-  const [newPhaseDraft, setNewPhaseDraft] = useState<{ subProjectId?: string; startDate: string; endDate: string } | null>(null);
+  const [newPhaseDraft, setNewPhaseDraft] = useState<{ rowKey: string; subProjectId?: string; startDate: string; endDate: string } | null>(null);
 
   // Constants
   const BASE_DAY_WIDTH = 30; 
@@ -357,7 +357,8 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
     e.preventDefault();
     const dateStr = getDateFromEvent(e, subProjectId);
     setIsDrawingNewPhase(true);
-    setNewPhaseDraft({ subProjectId, startDate: dateStr, endDate: dateStr });
+    const rowKey = subProjectId || 'general';
+    setNewPhaseDraft({ rowKey, subProjectId, startDate: dateStr, endDate: dateStr });
     setActiveTab('phases');
     setSidebarOpen(true);
     setEditingPhase(null);
@@ -607,9 +608,9 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
       )
   };
 
-  const renderNewPhaseGhost = (subProjectId?: string) => {
+  const renderNewPhaseGhost = (rowKey: string) => {
     if (!isDrawingNewPhase || !newPhaseDraft) return null;
-    if ((newPhaseDraft.subProjectId || '') !== (subProjectId || '')) return null;
+    if (newPhaseDraft.rowKey !== rowKey) return null;
     const start = new Date(newPhaseDraft.startDate);
     const end = new Date(newPhaseDraft.endDate);
     const startDate = start <= end ? start : end;
@@ -903,9 +904,9 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                         </div>
                         <div className="flex-1 bg-slate-50/50 border-y border-slate-100"></div>
                     </div>
-                <div className="relative mt-1">
-                    {renderNewPhaseGhost(undefined)}
-                    {generalPhases.map(phase => (
+                    <div className="relative mt-1">
+                    {renderNewPhaseGhost('general')}
+                        {generalPhases.map(phase => (
                         <div
                             key={phase.id}
                             className={`flex h-10 group ${dragOverPhaseId === phase.id ? 'bg-indigo-50/60' : ''}`}
