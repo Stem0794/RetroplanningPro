@@ -49,7 +49,8 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
 
   // New Holiday State
   const [newHolidayName, setNewHolidayName] = useState('');
-  const [newHolidayDate, setNewHolidayDate] = useState(formatDate(new Date()));
+  const [newHolidayStart, setNewHolidayStart] = useState(formatDate(new Date()));
+  const [newHolidayEnd, setNewHolidayEnd] = useState(formatDate(new Date()));
 
   // UI State
   const [collapsedSubProjects, setCollapsedSubProjects] = useState<Set<string>>(new Set());
@@ -248,13 +249,23 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
 
   const handleAddHoliday = () => {
     if (readOnly) return;
-    if(!newHolidayName) return;
-    const newHoliday: Holiday = {
+    if (!newHolidayName) return;
+    const start = new Date(newHolidayStart);
+    const end = new Date(newHolidayEnd);
+    if (start > end) return;
+
+    const entries: Holiday[] = [];
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      entries.push({
         id: crypto.randomUUID(),
         name: newHolidayName,
-        date: newHolidayDate
-    };
-    setHolidays([...holidays, newHoliday]);
+        date: formatDate(cursor)
+      });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    setHolidays([...holidays, ...entries]);
     setNewHolidayName('');
   };
 
