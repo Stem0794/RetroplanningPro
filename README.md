@@ -1,49 +1,50 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# RetroplanningPro
 
-# Run and deploy your AI Studio app
+Planificateur React/Vite avec sauvegarde Supabase et export Excel façon Gantt.
 
-This contains everything you need to run your app locally.
+## Fonctionnalités
+- Tableau de bord : création, duplication, suppression et édition inline des projets (titre/description).
+- Planning interactif : phases glissables/redimensionnables, ajout en traçant sur la grille, zoom, centrage sur aujourd’hui, import de liens publics en lecture seule.
+- Sous-projets, phases, OOO multi-jours, export Excel stylé (mois/semaines/jours + couleurs de phases).
+- Connexion Supabase (mode local possible pour les liens publics).
 
-View your app in AI Studio: https://ai.studio/apps/drive/1zAMnqcy_vveQJOhBwtIBOZ69HtoMROfV
+## Prérequis
+- Node.js 18+ recommandé.
+- Clés Supabase (clé anon publique + utilisateur email/mot de passe pour la synchro).
 
-## Run Locally
-
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Run the app:
-   `npm run dev`
-
-## Supabase app config
-
-Create a `.env.local` with:
-```
-VITE_SUPABASE_URL=<your-supabase-url>
-VITE_SUPABASE_ANON_KEY=<your-anon-key>
-VITE_SUPABASE_EMAIL=<app-user-email>
-VITE_SUPABASE_PASSWORD=<app-user-password>
+## Installation
+```bash
+npm install
 ```
 
-Use a Supabase Auth user (email/password) that should own the data; RLS policies rely on `auth.uid()`. Keep these secrets out of source control.
+## Démarrer en local
+```bash
+npm run dev
+```
 
-### GitHub Secrets
+## Build production
+```bash
+npm run build
+```
 
-Add these in **Settings → Secrets → Actions** so CI builds without exposing keys:
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
-- `VITE_SUPABASE_EMAIL`
-- `VITE_SUPABASE_PASSWORD`
+## Configuration Supabase
+Créer un fichier `.env.local` (ou secrets GitHub Actions) :
+```
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=anon-public-key
+VITE_SUPABASE_EMAIL=auth-user@email.com
+VITE_SUPABASE_PASSWORD=auth-user-password
+```
+- Utiliser **la clé anon publique** (jamais la service_role).
+- Créer un utilisateur Auth avec l’email/mot de passe ci-dessus ; il servira pour la synchro.
+- Les liens publics (`?plan=...`) restent en local/lecture seule.
 
-The workflow `.github/workflows/ci.yml` consumes those secrets to run `npm run build`.
+## Déploiement GitHub Pages
+- Le workflow Pages build avec `npm run build` et publie `dist/`.
+- Assurez-vous que les secrets Supabase sont définis dans `Settings → Secrets and variables → Actions`.
 
-## Supabase database
+## Export Excel
+- Onglet “Task List” et “Visual Timeline” : entêtes mois/semaines/jours, couleurs des phases, OOO visibles.
 
-The SQL to create the project storage lives in `supabase/migrations/20250105_create_projects_schema.sql`. To apply it:
-
-1. Create a Supabase project and open the SQL Editor.
-2. Paste and run the contents of the migration file to create tables for `projects`, `subprojects`, `phases`, and `holidays`, plus the `phase_type` enum and indexes.
-3. RLS is enabled with per-user ownership (`owner_id` defaults to `auth.uid()`). When seeding data with the service role, set `owner_id` to the intended user explicitly. If you prefer fully public access, adjust or remove the policies after running the script.
+## Notes
+- Pas de migration SQL fournie : créer vos tables/politiques Supabase selon vos besoins (phases, subprojects, holidays, projects). Le client fonctionne en mode local si les clés manquent.
