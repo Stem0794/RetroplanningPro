@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { ProjectPlan, PhaseType } from '../types';
-import { Plus, Trash2, Copy, Calendar } from 'lucide-react';
+import { Plus, Trash2, Copy, Calendar, Edit2 } from 'lucide-react';
 
 interface DashboardProps {
   plans: ProjectPlan[];
