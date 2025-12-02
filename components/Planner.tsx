@@ -355,10 +355,10 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
   };
 
   const getDateFromEvent = (e: React.MouseEvent) => {
-    const native = e.nativeEvent as MouseEvent;
-    const offsetX = native.offsetX + (scrollContainerRef.current?.scrollLeft || 0);
-    const dayIndex = Math.floor(offsetX / DAY_WIDTH);
-    const gridStart = weeks[0] ? new Date(weeks[0]) : new Date(timelineStart);
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = e.clientX - rect.left + (scrollContainerRef.current?.scrollLeft || 0);
+    const dayIndex = Math.floor(x / DAY_WIDTH);
+    const gridStart = new Date(timelineStart);
     gridStart.setHours(0, 0, 0, 0);
     const clickDate = new Date(gridStart);
     clickDate.setDate(clickDate.getDate() + dayIndex);
