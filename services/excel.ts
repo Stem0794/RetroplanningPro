@@ -1,4 +1,3 @@
-
 import * as XLSX from 'xlsx';
 import { ProjectPlan, PHASE_LABELS, PhaseType } from '../types';
 import { getPlanRange, isSameDay } from '../utils/dateUtils';
@@ -6,7 +5,6 @@ import { getPlanRange, isSameDay } from '../utils/dateUtils';
 export const exportToExcel = (plan: ProjectPlan) => {
   const X = (XLSX as any).default || XLSX;
 
-  // Palette aligned to app colors
   const PHASE_HEX: Record<PhaseType, string> = {
     [PhaseType.CONCEPTION]: 'DDEAFE',
     [PhaseType.DEVELOPMENT]: 'FFE8C7',
@@ -14,6 +12,7 @@ export const exportToExcel = (plan: ProjectPlan) => {
     [PhaseType.PUSH_TO_PROD]: 'FEE2E2',
     [PhaseType.OTHER]: 'E5E7EB'
   };
+
   const INDIGO = '6366F1';
   const SLATE = '0F172A';
   const SLATE_LIGHT = 'CBD5E1';
@@ -35,6 +34,32 @@ export const exportToExcel = (plan: ProjectPlan) => {
     alignment: { horizontal: 'center', vertical: 'center' as const },
     fill: { fgColor: { rgb: PANEL } }
   };
+  const monthHeaderStyle = {
+    font: { bold: true, color: { rgb: SLATE }, sz: 10 },
+    alignment: { horizontal: 'center', vertical: 'center' as const },
+    fill: { fgColor: { rgb: 'E2E8F0' } },
+    border: {
+      top: { style: 'thin', color: { rgb: SLATE_LIGHT } },
+      bottom: { style: 'thin', color: { rgb: SLATE_LIGHT } },
+      left: { style: 'thin', color: { rgb: SLATE_LIGHT } },
+      right: { style: 'thin', color: { rgb: SLATE_LIGHT } }
+    }
+  };
+  const dayHeaderStyle = {
+    font: { bold: true, color: { rgb: SLATE }, sz: 9 },
+    alignment: { horizontal: 'center', vertical: 'center' as const },
+    fill: { fgColor: { rgb: 'F8FAFC' } },
+    border: {
+      top: { style: 'thin', color: { rgb: SLATE_LIGHT } },
+      bottom: { style: 'thin', color: { rgb: SLATE_LIGHT } },
+      left: { style: 'thin', color: { rgb: SLATE_LIGHT } },
+      right: { style: 'thin', color: { rgb: SLATE_LIGHT } }
+    }
+  };
+  const weekendHeaderStyle = {
+    ...dayHeaderStyle,
+    fill: { fgColor: { rgb: 'E2E8F0' } }
+  };
   const outlineBorder = {
     top: { style: 'thin', color: { rgb: SLATE_LIGHT } },
     bottom: { style: 'thin', color: { rgb: SLATE_LIGHT } },
@@ -50,7 +75,7 @@ export const exportToExcel = (plan: ProjectPlan) => {
     }
   };
 
-  const merge = (ws: XLSX.WorkSheet, sRow: number, eRow: number, sCol: number, eCol: number) => {
+  const merge = (ws: XLSX.WorkSheet, sRow: number, sCol: number, eRow: number, eCol: number) => {
     ws['!merges'] = ws['!merges'] || [];
     ws['!merges'].push({ s: { r: sRow, c: sCol }, e: { r: eRow, c: eCol } });
   };
@@ -63,7 +88,6 @@ export const exportToExcel = (plan: ProjectPlan) => {
 
   const subProjectsMap = new Map(plan.subProjects?.map(sp => [sp.id, sp.name]) || []);
 
-  // Sort phases: Subproject -> Start Date
   const sortedPhases = [...plan.phases].sort((a, b) => {
     const spA = a.subProjectId ? subProjectsMap.get(a.subProjectId) || 'General' : 'General';
     const spB = b.subProjectId ? subProjectsMap.get(b.subProjectId) || 'General' : 'General';
@@ -123,7 +147,8 @@ export const exportToExcel = (plan: ProjectPlan) => {
     current.setDate(current.getDate() + 1);
   }
 
-  const timelineHeader = ["Subproject", "Task Name", "Start", "End", ...allDays.map(d => `${d.getMonth() + 1}/${d.getDate()}`)];
+  const metaCols = ["Subproject", "Task Name", "Start", "End"];
+  const dayLabels = allDays.map(d => `${d.getDate()}`);
 
   const timelineRows = sortedPhases.map(phase => {
     const row: (string | number)[] = [
@@ -143,11 +168,33 @@ export const exportToExcel = (plan: ProjectPlan) => {
     return row;
   });
 
+  // Month spans for header
+  const monthSpans: { label: string; span: number }[] = [];
+  if (allDays.length) {
+    let currentMonth = allDays[0].getMonth();
+    let currentYear = allDays[0].getFullYear();
+    let span = 0;
+    allDays.forEach((d, idx) => {
+      if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+        span += 1;
+      } else {
+        monthSpans.push({ label: `${allDays[idx - 1].toLocaleString('default', { month: 'short' })} ${currentYear}`, span });
+        currentMonth = d.getMonth();
+        currentYear = d.getFullYear();
+        span = 1;
+      }
+      if (idx === allDays.length - 1) {
+        monthSpans.push({ label: `${d.toLocaleString('default', { month: 'short' })} ${currentYear}`, span });
+      }
+    });
+  }
+
   const timelineDataArray = [
-    [`${plan.name} — Timeline`, ...Array(timelineHeader.length - 1).fill('')],
-    [`Range: ${start.toLocaleDateString()} → ${end.toLocaleDateString()}`, ...Array(timelineHeader.length - 1).fill('')],
+    [`${plan.name} — Timeline`, ...Array(metaCols.length + allDays.length - 1).fill('')],
+    [`Range: ${start.toLocaleDateString()} → ${end.toLocaleDateString()}`, ...Array(metaCols.length + allDays.length - 1).fill('')],
     [],
-    timelineHeader,
+    [...metaCols, ...allDays.map(() => '')], // month row placeholders
+    [...metaCols, ...dayLabels],
     ...timelineRows
   ];
   const wsTimeline = X.utils.aoa_to_sheet(timelineDataArray);
@@ -160,16 +207,35 @@ export const exportToExcel = (plan: ProjectPlan) => {
   merge(wsTimeline, 1, 1, 0, timelineCols.length + allDays.length - 1);
   setCellStyle(wsTimeline, 0, 0, { ...titleStyle });
   setCellStyle(wsTimeline, 1, 0, { ...subtitleStyle });
-  applyHeader(wsTimeline, 3, timelineCols.length + allDays.length);
 
+  // Month header (row 3)
+  let colOffset = metaCols.length;
+  monthSpans.forEach((m) => {
+    const startCol = colOffset;
+    const endCol = colOffset + m.span - 1;
+    merge(wsTimeline, 3, startCol, 3, endCol);
+    setCellStyle(wsTimeline, 3, startCol, { ...monthHeaderStyle });
+    wsTimeline[X.utils.encode_cell({ r: 3, c: startCol })].v = m.label;
+    colOffset += m.span;
+  });
+
+  // Day header (row 4)
+  applyHeader(wsTimeline, 4, metaCols.length + allDays.length);
+  allDays.forEach((d, idx) => {
+    const addr = X.utils.encode_cell({ r: 4, c: metaCols.length + idx });
+    wsTimeline[addr].s = (d.getDay() === 0 || d.getDay() === 6) ? weekendHeaderStyle : dayHeaderStyle;
+    wsTimeline[addr].v = d.getDate();
+  });
+
+  // Phase bars
   sortedPhases.forEach((phase, phaseIdx) => {
-    const row = phaseIdx + 4; // header rows + spacer
+    const row = phaseIdx + 5; // after title/range/spacer/month/day rows
     const pStart = new Date(phase.startDate);
     const pEnd = new Date(phase.endDate);
     const fillColor = PHASE_HEX[phase.type] || 'E5E7EB';
 
     allDays.forEach((day, dayIdx) => {
-      const col = 4 + dayIdx;
+      const col = metaCols.length + dayIdx;
       const addr = X.utils.encode_cell({ c: col, r: row });
       const isHoliday = plan.holidays.some(h => isSameDay(new Date(h.date), day));
       const isActive = day >= pStart && day <= pEnd;
