@@ -554,7 +554,8 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
     const width = durationDays * DAY_WIDTH;
     
     const colors = PHASE_COLORS[phase.type];
-    const label = phase.name || PHASE_LABELS[phase.type];
+    const defaultLabel = phase.name || PHASE_LABELS[phase.type];
+    const label = (!phase.name && phase.type === PhaseType.PUSH_TO_PROD) ? '🚀' : defaultLabel;
 
     const isDraggingThis = dragState?.phaseId === phase.id;
 
