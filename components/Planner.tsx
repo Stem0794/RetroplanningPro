@@ -30,6 +30,8 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
   const [editingHoliday, setEditingHoliday] = useState<Holiday | null>(null);
   const [editingSubprojectId, setEditingSubprojectId] = useState<string | null>(null);
   const [editingSubprojectName, setEditingSubprojectName] = useState('');
+  const [renamingPhaseId, setRenamingPhaseId] = useState<string | null>(null);
+  const [renamingPhaseName, setRenamingPhaseName] = useState('');
   
   // Sidebar states
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -183,6 +185,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
   };
 
   const startRenamingSubproject = (sp: SubProject) => {
+    if (readOnly) return;
     setEditingSubprojectId(sp.id);
     setEditingSubprojectName(sp.name);
   };
@@ -192,6 +195,24 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
     setSubProjects(prev => prev.map(sp => sp.id === editingSubprojectId ? { ...sp, name: editingSubprojectName.trim() || sp.name } : sp));
     setEditingSubprojectId(null);
     setEditingSubprojectName('');
+  };
+
+  const startRenamingPhase = (phase: Phase) => {
+    if (readOnly) return;
+    setRenamingPhaseId(phase.id);
+    setRenamingPhaseName(phase.name || '');
+  };
+
+  const commitPhaseName = () => {
+    if (!renamingPhaseId) return;
+    setPhases(prev => prev.map(p => p.id === renamingPhaseId ? { ...p, name: renamingPhaseName.trim() || undefined } : p));
+    setRenamingPhaseId(null);
+    setRenamingPhaseName('');
+  };
+
+  const cancelPhaseName = () => {
+    setRenamingPhaseId(null);
+    setRenamingPhaseName('');
   };
 
   const handleAddHoliday = () => {
@@ -789,9 +810,27 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                                         >
                                             {/* Phase Label */}
                                             <div className={`w-64 sticky left-0 z-30 bg-white border-r border-slate-100 px-8 py-2 flex items-center justify-between shadow-[4px_0_10px_-5px_rgba(0,0,0,0.1)] ${readOnly ? '' : 'cursor-grab active:cursor-grabbing'}`}>
-                                                <div className="truncate text-xs font-medium text-slate-600" title={phase.name || PHASE_LABELS[phase.type]}>
+                                                {renamingPhaseId === phase.id ? (
+                                                  <input
+                                                    value={renamingPhaseName}
+                                                    autoFocus
+                                                    onChange={(e) => setRenamingPhaseName(e.target.value)}
+                                                    onBlur={commitPhaseName}
+                                                    onKeyDown={(e) => {
+                                                      if (e.key === 'Enter') commitPhaseName();
+                                                      if (e.key === 'Escape') cancelPhaseName();
+                                                    }}
+                                                    className="w-full text-xs font-medium bg-white border border-slate-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                                  />
+                                                ) : (
+                                                  <div
+                                                    className="truncate text-xs font-medium text-slate-600"
+                                                    title={phase.name || PHASE_LABELS[phase.type]}
+                                                    onClick={() => startRenamingPhase(phase)}
+                                                  >
                                                     {phase.name || PHASE_LABELS[phase.type]}
-                                                </div>
+                                                  </div>
+                                                )}
                                                 {!readOnly && (
                                                   <button 
                                                       onClick={() => { setEditingPhase(phase); setSidebarOpen(true); setActiveTab('phases'); }}
@@ -857,9 +896,26 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                                 onDragEnd={handlePhaseRowDragEnd}
                             >
                                 <div className={`w-64 sticky left-0 z-30 bg-white border-r border-slate-100 px-4 py-2 flex items-center justify-between shadow-[4px_0_10px_-5px_rgba(0,0,0,0.1)] ${readOnly ? '' : 'cursor-grab active:cursor-grabbing'}`}>
-                                    <div className="truncate text-xs font-medium text-slate-600">
+                                    {renamingPhaseId === phase.id ? (
+                                      <input
+                                        value={renamingPhaseName}
+                                        autoFocus
+                                        onChange={(e) => setRenamingPhaseName(e.target.value)}
+                                        onBlur={commitPhaseName}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') commitPhaseName();
+                                          if (e.key === 'Escape') cancelPhaseName();
+                                        }}
+                                        className="w-full text-xs font-medium bg-white border border-slate-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                      />
+                                    ) : (
+                                      <div
+                                        className="truncate text-xs font-medium text-slate-600"
+                                        onClick={() => startRenamingPhase(phase)}
+                                      >
                                         {phase.name || PHASE_LABELS[phase.type]}
-                                    </div>
+                                      </div>
+                                    )}
                                     {!readOnly && (
                                       <button 
                                           onClick={() => { setEditingPhase(phase); setSidebarOpen(true); setActiveTab('phases'); }}
