@@ -356,7 +356,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
 
   const getDateFromEvent = (e: React.MouseEvent) => {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const x = e.clientX - rect.left + (scrollContainerRef.current?.scrollLeft || 0);
+    const x = e.clientX - rect.left; // position inside the grid row, scroll already reflected in rect
     const dayIndex = Math.floor(x / DAY_WIDTH);
     const gridStart = new Date(timelineStart);
     gridStart.setHours(0, 0, 0, 0);
