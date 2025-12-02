@@ -9,12 +9,17 @@ interface DashboardProps {
   onSelect: (plan: ProjectPlan) => void;
   onDelete: (id: string) => void;
   onDuplicate: (plan: ProjectPlan) => void;
+  onUpdate: (plan: ProjectPlan) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ plans, onCreate, onSelect, onDelete, onDuplicate }) => {
+const Dashboard: React.FC<DashboardProps> = ({ plans, onCreate, onSelect, onDelete, onDuplicate, onUpdate }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newPlanName, setNewPlanName] = useState('');
   const [newPlanDesc, setNewPlanDesc] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleCreate = async () => {
     if (!newPlanName) return;
@@ -32,6 +37,30 @@ const Dashboard: React.FC<DashboardProps> = ({ plans, onCreate, onSelect, onDele
     setNewPlanName('');
     setNewPlanDesc('');
     setIsModalOpen(false);
+  };
+
+  const startEdit = (plan: ProjectPlan) => {
+    setEditingId(plan.id);
+    setEditName(plan.name);
+    setEditDesc(plan.description || '');
+  };
+
+  const commitEdit = async (plan: ProjectPlan) => {
+    if (!editingId) return;
+    setIsSaving(true);
+    const updated: ProjectPlan = {
+      ...plan,
+      name: editName.trim() || plan.name,
+      description: editDesc.trim(),
+    };
+    try {
+      onUpdate(updated);
+    } finally {
+      setIsSaving(false);
+      setEditingId(null);
+      setEditName('');
+      setEditDesc('');
+    }
   };
 
   return (
@@ -55,12 +84,30 @@ const Dashboard: React.FC<DashboardProps> = ({ plans, onCreate, onSelect, onDele
           <div 
             key={plan.id} 
             className="group bg-white rounded-2xl border border-slate-200 hover:border-indigo-300 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden flex flex-col"
-            onClick={() => onSelect(plan)}
+            onClick={() => editingId ? null : onSelect(plan)}
           >
             <div className="h-2 w-full bg-gradient-to-r from-indigo-500 to-purple-500" />
             <div className="p-6 flex-1">
-              <h3 className="text-xl font-bold text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors">{plan.name}</h3>
-              <p className="text-slate-500 text-sm line-clamp-2 mb-4 h-10">{plan.description || "No description provided."}</p>
+              {editingId === plan.id ? (
+                <div className="space-y-2 mb-4">
+                  <input
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    autoFocus
+                  />
+                  <textarea
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 h-20 resize-none"
+                    value={editDesc}
+                    onChange={(e) => setEditDesc(e.target.value)}
+                  />
+                </div>
+              ) : (
+                <>
+                  <h3 className="text-xl font-bold text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors">{plan.name}</h3>
+                  <p className="text-slate-500 text-sm line-clamp-2 mb-4 h-10">{plan.description || "No description provided."}</p>
+                </>
+              )}
               
               <div className="flex items-center gap-4 text-xs text-slate-400 mt-auto">
                 <div className="flex items-center gap-1">
@@ -75,20 +122,47 @@ const Dashboard: React.FC<DashboardProps> = ({ plans, onCreate, onSelect, onDele
             </div>
 
             <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button 
-                onClick={(e) => { e.stopPropagation(); onDuplicate(plan); }}
-                className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                title="Duplicate"
-              >
-                <Copy size={18} />
-              </button>
-              <button 
-                onClick={(e) => { e.stopPropagation(); onDelete(plan.id); }}
-                className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                title="Delete"
-              >
-                <Trash2 size={18} />
-              </button>
+              {editingId === plan.id ? (
+                <>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setEditingId(null); setEditName(''); setEditDesc(''); }}
+                    className="px-3 py-1 text-sm text-slate-500 hover:text-slate-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); commitEdit(plan); }}
+                    disabled={isSaving || !editName}
+                    className="px-4 py-1 text-sm text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:bg-indigo-300"
+                  >
+                    {isSaving ? 'Saving...' : 'Save'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); startEdit(plan); }}
+                    className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                    title="Edit"
+                  >
+                    <Edit2 size={18} />
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); onDuplicate(plan); }}
+                    className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                    title="Duplicate"
+                  >
+                    <Copy size={18} />
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); onDelete(plan.id); }}
+                    className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </>
+              )}
             </div>
           </div>
         ))}

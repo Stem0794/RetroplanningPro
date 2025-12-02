@@ -384,6 +384,7 @@ const App: React.FC = () => {
           onSelect={(plan) => setCurrentPlanId(plan.id)}
           onDelete={handleDeletePlan}
           onDuplicate={handleDuplicatePlan}
+          onUpdate={handleUpdatePlan}
         />
       )}
     </div>
