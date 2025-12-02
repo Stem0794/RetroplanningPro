@@ -131,19 +131,23 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
 
   const handleScrollToToday = () => {
     if (!scrollContainerRef.current) return;
-    
-    const today = new Date();
-    const diffTime = today.getTime() - timelineStart.getTime();
-    const diffDays = diffTime / (1000 * 60 * 60 * 24);
-    
-    if (diffDays < 0) return; // Before timeline starts
-    
-    const pixelOffset = diffDays * DAY_WIDTH;
+
+    const startOfDay = (d: Date) => {
+      const copy = new Date(d);
+      copy.setHours(0, 0, 0, 0);
+      return copy;
+    };
+
+    const today = startOfDay(new Date());
+    const start = startOfDay(timelineStart);
+    const diffDays = (today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+
+    const pixelOffset = Math.max(0, diffDays * DAY_WIDTH);
     const containerWidth = scrollContainerRef.current.clientWidth;
-    
+
     scrollContainerRef.current.scrollTo({
-        left: pixelOffset - (containerWidth / 2), // Center it
-        behavior: 'smooth'
+      left: pixelOffset + DAY_WIDTH / 2 - (containerWidth / 2), // center on the cell
+      behavior: 'smooth'
     });
   };
 
