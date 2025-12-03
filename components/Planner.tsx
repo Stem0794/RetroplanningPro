@@ -57,6 +57,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
   const [zoomLevel, setZoomLevel] = useState(1);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const gridHeaderRef = useRef<HTMLDivElement>(null);
   
   // Drag State
   const [dragState, setDragState] = useState<DragState | null>(null);
@@ -65,6 +66,12 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
   const [dragOverPhaseId, setDragOverPhaseId] = useState<string | null>(null);
   const hasAutoScrolled = useRef<string | null>(null);
   const newSubProjectInputRef = useRef<HTMLInputElement>(null);
+  const parseDateString = (value: string) => {
+    const [year, month, day] = value.split('-').map(Number);
+    const date = new Date(year, (month || 1) - 1, day || 1);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  };
 
   // Constants
   const BASE_DAY_WIDTH = 30; 
@@ -85,6 +92,13 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
     return d;
   }, [baseEnd]);
   const weeks = useMemo(() => getWeeksBetween(timelineStart, timelineEnd), [timelineStart, timelineEnd]);
+  const earliestPhaseDate = useMemo(() => {
+    if (!phases.length) return null;
+    return phases.reduce<Date>((earliest, phase) => {
+      const start = parseDateString(phase.startDate);
+      return start < earliest ? start : earliest;
+    }, parseDateString(phases[0].startDate));
+  }, [phases]);
 
   // --- Handlers ---
 
@@ -144,9 +158,14 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
     const diffDays = (today.getTime() - gridStart.getTime()) / (1000 * 60 * 60 * 24);
     const pixelOffset = Math.max(0, diffDays * DAY_WIDTH);
     const containerWidth = scrollContainerRef.current.clientWidth;
+    const containerRect = scrollContainerRef.current.getBoundingClientRect();
+    const headerRect = gridHeaderRef.current?.getBoundingClientRect();
+    const gridLeftOffset = headerRect ? Math.max(0, (headerRect.left - containerRect.left) + scrollContainerRef.current.scrollLeft) : 0;
+    const usableWidth = Math.max(containerWidth - gridLeftOffset, 0);
+    const centerOffset = usableWidth > 0 ? usableWidth / 2 : containerWidth / 2;
 
     scrollContainerRef.current.scrollTo({
-      left: pixelOffset + DAY_WIDTH / 2 - (containerWidth / 2),
+      left: Math.max(0, pixelOffset + (DAY_WIDTH / 2) - centerOffset),
       behavior
     });
   };
@@ -156,12 +175,11 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
   useEffect(() => {
     if (hasAutoScrolled.current === plan.id) return;
     const id = requestAnimationFrame(() => {
-      scrollToDate(new Date(), 'auto');
+      scrollToDate(earliestPhaseDate || new Date(), 'auto');
       hasAutoScrolled.current = plan.id;
     });
     return () => cancelAnimationFrame(id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plan.id, weeks.length, DAY_WIDTH]);
+  }, [plan.id, weeks.length, DAY_WIDTH, earliestPhaseDate]);
 
   const handleAddPhase = () => {
     if (readOnly) return;
@@ -468,9 +486,9 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
   const inputClass = "w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all";
 
   // Rendering Helpers
-  const renderGridHeader = () => {
+  const renderGridHeader = (ref?: React.Ref<HTMLDivElement>) => {
     return (
-        <div className="flex">
+        <div ref={ref} className="flex">
             {weeks.map((week, wIdx) => {
                 const isNewMonth = wIdx === 0 || week.getMonth() !== weeks[wIdx - 1].getMonth();
                 const monthName = MONTH_NAMES[week.getMonth()];
@@ -802,7 +820,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                 <div className="w-64 bg-white border-r border-b border-slate-200 flex-shrink-0 flex items-end pb-2 px-4 sticky left-0 z-40 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.1)]">
                     <span className="text-xs font-bold text-slate-400 uppercase">Subprojects & Phases</span>
                 </div>
-                {renderGridHeader()}
+                {renderGridHeader(gridHeaderRef)}
              </div>
 
              {/* Content */}
