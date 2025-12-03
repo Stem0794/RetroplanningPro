@@ -1078,7 +1078,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                                                     const { start, end } = clampDates('start', value, prev.endDate);
                                                     return { ...prev, startDate: start, endDate: end };
                                                   });
-                                                })} 
+                                                }} 
                                             />
                                         </div>
                                         <div>
@@ -1094,7 +1094,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                                                     const { start, end } = clampDates('end', prev.startDate, value);
                                                     return { ...prev, startDate: start, endDate: end };
                                                   });
-                                                })} 
+                                                }} 
                                             />
                                         </div>
                                     </div>
