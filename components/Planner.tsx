@@ -1239,7 +1239,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                                                 onChange={e => {
                                                   const value = e.target.value;
                                                   setEditingHoliday(prev => prev ? { ...prev, date: value } : prev);
-                                                })} 
+                                                }} 
                                             />
                                         </div>
                                         <div className="flex gap-2 mt-4">
