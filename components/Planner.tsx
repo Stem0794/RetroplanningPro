@@ -1117,6 +1117,28 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                     ) : activeTab === 'phases' ? (
                         /* ADD MODE */
                         <div className="space-y-8">
+                            {/* Add Subproject */}
+                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
+                                <h3 className="font-semibold text-slate-700 mb-3">Add Subproject</h3>
+                                <div className="flex gap-2">
+                                    <input
+                                        ref={newSubProjectInputRef}
+                                        type="text"
+                                        placeholder="Subproject name"
+                                        className={inputClass}
+                                        value={newSubProjectName}
+                                        onChange={(e) => setNewSubProjectName(e.target.value)}
+                                    />
+                                    <button
+                                        onClick={handleAddSubProject}
+                                        className="px-4 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-900 transition-colors shadow-sm disabled:opacity-50"
+                                        disabled={!newSubProjectName.trim()}
+                                    >
+                                        Add
+                                    </button>
+                                </div>
+                            </div>
+
                             {/* Add Phase Section */}
                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
                                 <h3 className="font-semibold text-slate-700 mb-3">Add New Phase</h3>
