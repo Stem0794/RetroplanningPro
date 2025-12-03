@@ -1074,39 +1074,6 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                     ) : activeTab === 'phases' ? (
                         /* ADD MODE */
                         <div className="space-y-8">
-                            {/* Subproject Section */}
-                            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                                <h3 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                                    <Layers size={16} className="text-slate-400"/> Subprojects
-                                </h3>
-                                <div className="flex gap-2 mb-3">
-                                    <input 
-                                        type="text" 
-                                        placeholder="New Subproject Name"
-                                        className={inputClass}
-                                        value={newSubProjectName}
-                                        onChange={(e) => setNewSubProjectName(e.target.value)}
-                                    />
-                                    <button 
-                                        onClick={handleAddSubProject}
-                                        className="bg-slate-800 text-white px-3 rounded-lg text-sm hover:bg-slate-900 shadow-sm"
-                                    >
-                                        Add
-                                    </button>
-                                </div>
-                                <div className="space-y-1">
-                                    {subProjects.map(sp => (
-                                        <div key={sp.id} className="flex justify-between items-center text-sm p-2 bg-slate-50 rounded hover:bg-slate-100 group">
-                                            <span>{sp.name}</span>
-                                            <button onClick={() => handleDeleteSubProject(sp.id)} className="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100">
-                                                <Trash2 size={14}/>
-                                            </button>
-                                        </div>
-                                    ))}
-                                    {subProjects.length === 0 && <p className="text-xs text-slate-400 italic">No subprojects defined.</p>}
-                                </div>
-                            </div>
-
                             {/* Add Phase Section */}
                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
                                 <h3 className="font-semibold text-slate-700 mb-3">Add New Phase</h3>
