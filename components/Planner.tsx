@@ -72,6 +72,17 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
     date.setHours(0, 0, 0, 0);
     return date;
   };
+  const clampDates = (changed: 'start' | 'end', start: string, end: string) => {
+    const startDate = parseDateString(start);
+    const endDate = parseDateString(end);
+    if (changed === 'start' && startDate > endDate) {
+      return { start, end: start };
+    }
+    if (changed === 'end' && endDate < startDate) {
+      return { start: end, end };
+    }
+    return { start, end };
+  };
 
   // Constants
   const BASE_DAY_WIDTH = 30; 
@@ -1060,7 +1071,14 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                                                 type="date" 
                                                 className={inputClass} 
                                                 value={editingPhase.startDate} 
-                                                onChange={e => setEditingPhase({...editingPhase, startDate: e.target.value})} 
+                                                onChange={e => {
+                                                  const value = e.target.value;
+                                                  setEditingPhase(prev => {
+                                                    if (!prev) return prev;
+                                                    const { start, end } = clampDates('start', value, prev.endDate);
+                                                    return { ...prev, startDate: start, endDate: end };
+                                                  });
+                                                })} 
                                             />
                                         </div>
                                         <div>
@@ -1069,7 +1087,14 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                                                 type="date" 
                                                 className={inputClass} 
                                                 value={editingPhase.endDate} 
-                                                onChange={e => setEditingPhase({...editingPhase, endDate: e.target.value})} 
+                                                onChange={e => {
+                                                  const value = e.target.value;
+                                                  setEditingPhase(prev => {
+                                                    if (!prev) return prev;
+                                                    const { start, end } = clampDates('end', prev.startDate, value);
+                                                    return { ...prev, startDate: start, endDate: end };
+                                                  });
+                                                })} 
                                             />
                                         </div>
                                     </div>
@@ -1126,14 +1151,18 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                                         />
                                     </div>
 
-                                     <div className="grid grid-cols-2 gap-2">
+                                    <div className="grid grid-cols-2 gap-2">
                                         <div>
                                             <label className="text-[10px] font-bold text-slate-400 uppercase">Start</label>
                                             <input 
                                                 type="date" 
                                                 className={inputClass} 
                                                 value={newPhaseStart} 
-                                                onChange={e => setNewPhaseStart(e.target.value)} 
+                                                onChange={e => {
+                                                  const value = e.target.value;
+                                                  setNewPhaseStart(value);
+                                                  setNewPhaseEnd(prev => clampDates('start', value, prev).end);
+                                                }} 
                                             />
                                         </div>
                                         <div>
@@ -1142,7 +1171,11 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                                                 type="date" 
                                                 className={inputClass} 
                                                 value={newPhaseEnd} 
-                                                onChange={e => setNewPhaseEnd(e.target.value)} 
+                                                onChange={e => {
+                                                  const value = e.target.value;
+                                                  setNewPhaseEnd(value);
+                                                  setNewPhaseStart(prev => clampDates('end', prev, value).start);
+                                                }} 
                                                 disabled={newPhaseType === PhaseType.PUSH_TO_PROD}
                                             />
                                         </div>
@@ -1181,7 +1214,10 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                                                 type="date" 
                                                 className="w-full p-2 border border-red-200 rounded text-sm mt-1 focus:outline-none focus:ring-1 focus:ring-red-400" 
                                                 value={editingHoliday.date} 
-                                                onChange={e => setEditingHoliday({...editingHoliday, date: e.target.value})} 
+                                                onChange={e => {
+                                                  const value = e.target.value;
+                                                  setEditingHoliday(prev => prev ? { ...prev, date: value } : prev);
+                                                })} 
                                             />
                                         </div>
                                         <div className="flex gap-2 mt-4">
@@ -1205,19 +1241,27 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                                             onChange={(e) => setNewHolidayName(e.target.value)}
                                         />
                                         <div className="grid grid-cols-2 gap-2">
-                                          <input 
-                                              type="date" 
-                                              className="w-full px-3 py-2 bg-white border border-red-200 rounded-lg text-sm shadow-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" 
-                                              value={newHolidayStart} 
-                                              onChange={e => setNewHolidayStart(e.target.value)} 
-                                          />
-                                          <input 
-                                              type="date" 
-                                              className="w-full px-3 py-2 bg-white border border-red-200 rounded-lg text-sm shadow-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" 
-                                              value={newHolidayEnd} 
-                                              onChange={e => setNewHolidayEnd(e.target.value)} 
-                                          />
-                                        </div>
+                                      <input 
+                                          type="date" 
+                                          className="w-full px-3 py-2 bg-white border border-red-200 rounded-lg text-sm shadow-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" 
+                                          value={newHolidayStart} 
+                                          onChange={e => {
+                                            const value = e.target.value;
+                                            setNewHolidayStart(value);
+                                            setNewHolidayEnd(prev => clampDates('start', value, prev).end);
+                                          }} 
+                                      />
+                                      <input 
+                                          type="date" 
+                                          className="w-full px-3 py-2 bg-white border border-red-200 rounded-lg text-sm shadow-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" 
+                                          value={newHolidayEnd} 
+                                          onChange={e => {
+                                            const value = e.target.value;
+                                            setNewHolidayEnd(value);
+                                            setNewHolidayStart(prev => clampDates('end', prev, value).start);
+                                          }} 
+                                      />
+                                    </div>
                                         <button 
                                             onClick={handleAddHoliday}
                                             className="w-full bg-red-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors shadow-sm"
