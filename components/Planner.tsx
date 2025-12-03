@@ -736,17 +736,17 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                 <div className="w-px h-6 bg-slate-300 mx-1"></div>
                 <button 
                   onClick={() => { setSidebarOpen(true); setActiveTab('holidays'); setEditingPhase(null); }}
-                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors shadow-sm hover:shadow active:translate-y-[1px]"
                 >
                   <CalendarOff size={16} />
                   Add OOO
                 </button>
                 <button 
                   onClick={() => { setSidebarOpen(true); setActiveTab('phases'); setEditingHoliday(null); }}
-                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors shadow-sm hover:shadow active:translate-y-[1px]"
                 >
                   <Plus size={16} />
-                  New Phase
+                  Add phase
                 </button>
                 <button 
                   onClick={handleExport}
@@ -786,9 +786,9 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                 setEditingHoliday(null);
                 setTimeout(() => newSubProjectInputRef.current?.focus(), 0);
               }}
-              className="px-4 py-2 rounded-full bg-slate-800 text-white shadow-lg hover:bg-slate-900 text-sm"
+              className="px-4 py-2 rounded-full bg-slate-800 text-white shadow-lg hover:bg-slate-900 text-sm transition-transform hover:-translate-y-0.5 active:translate-y-0"
             >
-              Add Subproject
+              Add subproject
             </button>
             <button
               onClick={() => {
@@ -800,9 +800,9 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                 setNewPhaseStart(today);
                 setNewPhaseEnd(today);
               }}
-              className="px-4 py-2 rounded-full bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 text-sm"
+              className="px-4 py-2 rounded-full bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 text-sm transition-transform hover:-translate-y-0.5 active:translate-y-0"
             >
-              New Phase
+              Add phase
             </button>
             <button
               onClick={() => {
@@ -814,7 +814,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                 setNewHolidayEnd(today);
                 setNewHolidayName('');
               }}
-              className="px-4 py-2 rounded-full bg-red-500 text-white shadow-lg hover:bg-red-600 text-sm"
+              className="px-4 py-2 rounded-full bg-red-500 text-white shadow-lg hover:bg-red-600 text-sm transition-transform hover:-translate-y-0.5 active:translate-y-0"
             >
               Add OOO
             </button>
@@ -1119,7 +1119,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                         <div className="space-y-8">
                             {/* Add Subproject */}
                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
-                                <h3 className="font-semibold text-slate-700 mb-3">Add Subproject</h3>
+                                <h3 className="font-semibold text-slate-700 mb-3">Add subproject</h3>
                                 <div className="flex gap-2">
                                     <input
                                         ref={newSubProjectInputRef}
@@ -1131,17 +1131,17 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                                     />
                                     <button
                                         onClick={handleAddSubProject}
-                                        className="px-4 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-900 transition-colors shadow-sm disabled:opacity-50"
+                                        className="px-4 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-900 transition-colors shadow-sm hover:shadow-md active:translate-y-[1px] disabled:opacity-50"
                                         disabled={!newSubProjectName.trim()}
                                     >
-                                        Add
+                                        Add subproject
                                     </button>
                                 </div>
                             </div>
 
                             {/* Add Phase Section */}
                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
-                                <h3 className="font-semibold text-slate-700 mb-3">Add New Phase</h3>
+                                <h3 className="font-semibold text-slate-700 mb-3">Add phase</h3>
                                 <div className="space-y-3">
                                     <select 
                                         className={inputClass}
@@ -1205,9 +1205,9 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                                     
                                     <button 
                                         onClick={handleAddPhase}
-                                        className="w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
+                                        className="w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm hover:shadow-md active:translate-y-[1px]"
                                     >
-                                        Add Phase
+                                        Add phase
                                     </button>
                                 </div>
                             </div>
@@ -1286,7 +1286,7 @@ const Planner: React.FC<PlannerProps> = ({ plan, onSave, onBack, readOnly = fals
                                     </div>
                                         <button 
                                             onClick={handleAddHoliday}
-                                            className="w-full bg-red-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors shadow-sm"
+                                            className="w-full bg-red-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors shadow-sm hover:shadow-md active:translate-y-[1px]"
                                         >
                                             Add OOO
                                         </button>
